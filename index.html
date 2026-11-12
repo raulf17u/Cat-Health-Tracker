@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Cat Care & Health Tracker</title>
+  <meta name="theme-color" content="#F7F5F0" id="meta-theme-color" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            pastel: {
+              cream: '#F7F5F0',
+              card: '#FFFFFF',
+              sage: '#7A9E89',
+              sageSoft: '#E6EFEA',
+              slate: '#6B8CAE',
+              slateSoft: '#E5EDF5',
+              peach: '#D98A6C',
+              peachSoft: '#F8EAE4',
+              sand: '#EBE6DC',
+              charcoal: '#17191C',
+              darkCard: '#212429',
+              darkElevated: '#2B2F36',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Chart.js & FontAwesome -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(122, 158, 137, 0.35);
+      border-radius: 9999px;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-pastel-cream text-stone-800 dark:bg-pastel-charcoal dark:text-stone-100 min-h-screen transition-colors duration-200 flex flex-col">
+
+  <!-- Toast Message Banner -->
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-[70] transform -translate-y-28 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-stone-800 dark:bg-stone-100 text-white dark:text-stone-900 px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs sm:text-sm font-medium">
+      <i id="toast-icon" class="fa-solid fa-circle-check text-pastel-sage"></i>
+      <span id="toast-msg">Saved</span>
+    </div>
+  </div>
+
+  <!-- HEADER: Cat Name as Prominent Title & Circular Photo Frame (No generic branding/logos) -->
+  <header class="sticky top-0 z-40 bg-pastel-cream/90 dark:bg-pastel-charcoal/90 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Left: Circular Cat Photo + Editable Cat Name Title -->
+      <div class="flex items-center gap-3.5 min-w-0">
+        <div class="relative group shrink-0">
+          <button type="button" onclick="document.getElementById('avatar-upload').click()" class="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-[3px] border-pastel-sage/60 dark:border-pastel-sage/50 shadow-sm bg-pastel-sageSoft dark:bg-pastel-darkElevated flex items-center justify-center relative focus:outline-none focus:ring-2 focus:ring-pastel-sage" title="Tap to change photo from your phone">
+            <img id="pet-avatar-img" src="https://placehold.co/200x200/E6EFEA/5A7A68?text=Cat" alt="Cat photo" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/E6EFEA/5A7A68?text=Cat'" />
+            <div class="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity flex items-center justify-center text-white text-xs">
+              <i class="fa-solid fa-camera"></i>
+            </div>
+          </button>
+          <span onclick="document.getElementById('avatar-upload').click()" class="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-pastel-sage text-white flex items-center justify-center text-[10px] shadow cursor-pointer border-2 border-pastel-cream dark:border-pastel-charcoal">
+            <i class="fa-solid fa-camera"></i>
+          </span>
+          <input type="file" id="avatar-upload" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)" />
+        </div>
+
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 id="pet-name-title" onclick="startEditingName()" class="text-2xl sm:text-3xl font-extrabold tracking-tight truncate cursor-pointer hover:text-pastel-sage transition-colors" title="Tap to edit name">Mochi</h1>
+            <button type="button" onclick="startEditingName()" class="text-stone-400 hover:text-pastel-sage p-1.5 rounded-lg transition-colors" aria-label="Edit cat name">
+              <i class="fa-solid fa-pen text-xs"></i>
+            </button>
+          </div>
+          <input type="text" id="pet-name-input" maxlength="32" class="hidden text-xl sm:text-2xl font-bold bg-white dark:bg-pastel-darkElevated border border-pastel-sage rounded-xl px-2.5 py-1 focus:outline-none w-44 sm:w-56" onblur="commitNameEdit()" onkeydown="if(event.key==='Enter') commitNameEdit()" />
+          <div class="flex items-center gap-2 mt-0.5 text-xs text-stone-500 dark:text-stone-400">
+            <span id="header-pet-meta" class="truncate">Domestic Shorthair • 3 yrs</span>
+            <button type="button" onclick="togglePassportDrawer()" class="inline-flex items-center gap-1 font-semibold text-pastel-slate dark:text-sky-300 hover:underline shrink-0">
+              <i class="fa-solid fa-id-card"></i>
+              <span>ID & Info</span>
+              <i id="passport-arrow" class="fa-solid fa-chevron-down text-[10px] transition-transform"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Dark Mode Toggle, Install App, Data & Sync, Primary + Log Entry -->
+      <div class="flex items-center gap-2 sm:gap-2.5 ml-auto">
+        <!-- Single Dark/Light Mode Toggle -->
+        <button type="button" onclick="toggleDarkMode()" id="dark-mode-btn" class="p-2.5 sm:px-3 sm:py-2.5 rounded-2xl bg-white dark:bg-pastel-darkCard border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-amber-300 hover:bg-pastel-sand/50 dark:hover:bg-pastel-darkElevated transition-colors shadow-xs" title="Toggle Dark / Light Mode" aria-label="Toggle Dark Mode">
+          <i id="dark-mode-icon" class="fa-solid fa-moon text-sm"></i>
+        </button>
+
+        <!-- Install App (PWA) -->
+        <button type="button" onclick="openInstallModal()" class="p-2.5 sm:px-3.5 sm:py-2.5 rounded-2xl bg-white dark:bg-pastel-darkCard border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-200 hover:bg-pastel-slateSoft/60 dark:hover:bg-pastel-darkElevated transition-colors text-xs font-semibold flex items-center gap-1.5 shadow-xs" title="Install App on Phone">
+          <i class="fa-solid fa-mobile-screen-button text-pastel-slate"></i>
+          <span class="hidden md:inline">Install App</span>
+        </button>
+
+        <!-- Data & Sync -->
+        <button type="button" onclick="openDataModal()" class="p-2.5 sm:px-3.5 sm:py-2.5 rounded-2xl bg-white dark:bg-pastel-darkCard border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-200 hover:bg-pastel-sageSoft/60 dark:hover:bg-pastel-darkElevated transition-colors text-xs font-semibold flex items-center gap-1.5 shadow-xs" title="Backup, JSON Export & Partner Merge">
+          <i class="fa-solid fa-arrows-rotate text-pastel-sage"></i>
+          <span class="hidden sm:inline">Data & Sync</span>
+        </button>
+
+        <!-- Primary + Log Entry Button -->
+        <button type="button" onclick="openLogModal('weight')" class="px-4 py-2.5 rounded-2xl bg-pastel-sage hover:bg-[#6A8E79] text-white font-semibold text-xs sm:text-sm shadow-sm flex items-center gap-2 transition-all active:scale-95">
+          <i class="fa-solid fa-plus"></i>
+          <span>Log Entry</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- EXPANDABLE PET ID & PASSPORT DRAWER -->
+    <div id="passport-drawer" class="hidden border-t border-stone-200/80 dark:border-stone-800 bg-white/80 dark:bg-pastel-darkCard/95">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 flex items-center gap-2">
+            <i class="fa-solid fa-passport text-pastel-slate"></i> Pet Identification & Emergency Details
+          </h2>
+          <button type="button" onclick="openPassportEditModal()" class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-pastel-slateSoft dark:bg-pastel-darkElevated text-pastel-slate dark:text-sky-300 hover:opacity-85">
+            <i class="fa-solid fa-pen-to-square mr-1"></i> Edit Info
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+          <!-- Microchip -->
+          <div class="p-3 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200/70 dark:border-stone-700 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <span class="text-[11px] text-stone-500 dark:text-stone-400 block">Microchip Number</span>
+              <span id="id-microchip" class="font-mono font-bold text-sm truncate block mt-0.5">Not set</span>
+            </div>
+            <button type="button" onclick="copyTextValue('id-microchip', 'Microchip number copied')" class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-pastel-darkCard border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-200 hover:text-pastel-sage shrink-0 font-medium">
+              <i class="fa-regular fa-copy mr-1"></i>Copy
+            </button>
+          </div>
+
+          <!-- DOB & Age -->
+          <div class="p-3 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200/70 dark:border-stone-700">
+            <span class="text-[11px] text-stone-500 dark:text-stone-400 block">Date of Birth & Age</span>
+            <span id="id-dob-age" class="font-semibold text-sm block mt-0.5">Not set</span>
+          </div>
+
+          <!-- Breed / Color / Sex -->
+          <div class="p-3 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200/70 dark:border-stone-700">
+            <span class="text-[11px] text-stone-500 dark:text-stone-400 block">Breed • Color • Sex</span>
+            <span id="id-breed-sex" class="font-semibold text-sm block mt-0.5">Domestic Shorthair • Female</span>
+          </div>
+
+          <!-- Insurance -->
+          <div class="p-3 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200/70 dark:border-stone-700">
+            <span class="text-[11px] text-stone-500 dark:text-stone-400 block">Insurance Provider & Policy #</span>
+            <span id="id-insurance" class="font-semibold text-sm block mt-0.5">Not set</span>
+          </div>
+
+          <!-- Registration / License -->
+          <div class="p-3 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200/70 dark:border-stone-700">
+            <span class="text-[11px] text-stone-500 dark:text-stone-400 block">Registration / Council License #</span>
+            <span id="id-license" class="font-semibold text-sm block mt-0.5">Not set</span>
+          </div>
+
+          <!-- Emergency Vet Clinic & Phone -->
+          <div class="p-3 rounded-2xl bg-pastel-peachSoft/70 dark:bg-rose-950/30 border border-pastel-peach/30 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <span class="text-[11px] text-pastel-peach font-semibold block">Emergency Vet Clinic</span>
+              <span id="id-vet-clinic" class="font-semibold text-sm truncate block mt-0.5">Not set</span>
+            </div>
+            <a id="id-vet-phone-link" href="tel:" class="hidden px-3 py-1.5 rounded-xl bg-pastel-peach text-white font-semibold shrink-0 hover:opacity-90">
+              <i class="fa-solid fa-phone mr-1"></i><span id="id-vet-phone-label">Call</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS (Dashboard / Trends / History) -->
+  <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+    <div class="inline-flex p-1 rounded-2xl bg-pastel-sand/70 dark:bg-pastel-darkCard border border-stone-200/70 dark:border-stone-800">
+      <button type="button" onclick="switchMainView('dashboard')" id="nav-dashboard" class="main-nav-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white dark:bg-pastel-darkElevated text-stone-800 dark:text-white shadow-xs transition-all">
+        <i class="fa-solid fa-grid-2 mr-1.5 text-pastel-sage"></i>Dashboard
+      </button>
+      <button type="button" onclick="switchMainView('trends')" id="nav-trends" class="main-nav-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-all">
+        <i class="fa-solid fa-chart-line mr-1.5 text-pastel-slate"></i>Trends
+      </button>
+      <button type="button" onclick="switchMainView('history')" id="nav-history" class="main-nav-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-all">
+        <i class="fa-solid fa-clock-rotate-left mr-1.5 text-pastel-peach"></i>History <span id="history-count-badge" class="ml-1 text-[11px] px-1.5 py-0.2 rounded-full bg-stone-200/80 dark:bg-stone-700">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
+
+    <!-- ==================== VIEW 1: DASHBOARD ==================== -->
+    <section id="view-dashboard" class="space-y-5">
+      
+      <!-- Vaccine/Preventative Alert Banner (shown if overdue or due within 14 days) -->
+      <div id="vaccine-alert-banner" class="hidden p-3.5 rounded-2xl bg-pastel-peachSoft dark:bg-amber-950/35 border border-pastel-peach/40 flex items-center justify-between gap-3 text-xs sm:text-sm">
+        <div class="flex items-center gap-2.5">
+          <i class="fa-solid fa-bell text-pastel-peach text-base"></i>
+          <span id="vaccine-alert-text" class="font-medium">Upcoming vaccine reminder</span>
+        </div>
+        <button type="button" onclick="openLogModal('vaccine')" class="px-3 py-1.5 rounded-xl bg-pastel-peach text-white text-xs font-semibold shrink-0">Log Dose</button>
+      </div>
+
+      <!-- Responsive Dashboard Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+
+        <!-- 1. WEIGHT CARD -->
+        <div class="bg-pastel-card dark:bg-pastel-darkCard rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-pastel-sageSoft dark:bg-pastel-sage/20 text-pastel-sage flex items-center justify-center">
+                  <i class="fa-solid fa-weight-scale"></i>
+                </div>
+                <h3 class="font-bold text-base">Weight</h3>
+              </div>
+              <button type="button" onclick="openLogModal('weight')" class="w-9 h-9 rounded-xl bg-pastel-sageSoft dark:bg-pastel-darkElevated text-pastel-sage hover:bg-pastel-sage hover:text-white transition-colors flex items-center justify-center" title="Quick log weight" aria-label="Add weight entry">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+            <div class="flex items-baseline gap-2 my-1">
+              <span id="dash-weight-val" class="text-3xl font-extrabold tracking-tight">--</span>
+              <span class="text-sm font-medium text-stone-500">kg</span>
+              <span id="dash-weight-delta" class="ml-auto text-xs font-semibold px-2.5 py-0.5 rounded-full bg-stone-100 dark:bg-pastel-darkElevated text-stone-600 dark:text-stone-300">No trend yet</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+            <span id="dash-weight-date">No entries yet</span>
+            <button type="button" onclick="jumpToTrend('weight')" class="font-semibold text-pastel-sage hover:underline">Trend &rarr;</button>
+          </div>
+        </div>
+
+        <!-- 2. DAILY FOOD INTAKE CARD -->
+        <div class="bg-pastel-card dark:bg-pastel-darkCard rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-pastel-peachSoft dark:bg-pastel-peach/20 text-pastel-peach flex items-center justify-center">
+                  <i class="fa-solid fa-bowl-food"></i>
+                </div>
+                <h3 class="font-bold text-base">Daily Food Intake</h3>
+              </div>
+              <button type="button" onclick="openLogModal('food')" class="w-9 h-9 rounded-xl bg-pastel-peachSoft dark:bg-pastel-darkElevated text-pastel-peach hover:bg-pastel-peach hover:text-white transition-colors flex items-center justify-center" title="Quick log bowl weight" aria-label="Add food intake">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+            <div class="flex items-baseline gap-2 my-1">
+              <span id="dash-food-today" class="text-3xl font-extrabold tracking-tight">0</span>
+              <span class="text-sm font-medium text-stone-500">g eaten today</span>
+            </div>
+            <p id="dash-food-sub" class="text-xs text-stone-500 dark:text-stone-400 mt-1">Weigh bowl before & after refilling</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+            <span id="dash-food-avg">7d avg: -- g/day</span>
+            <button type="button" onclick="jumpToTrend('food')" class="font-semibold text-pastel-peach hover:underline">Trend &rarr;</button>
+          </div>
+        </div>
+
+        <!-- 3. PUKE TRACKER CARD (WITH TIMEFRAME SELECTOR) -->
+        <div class="bg-pastel-card dark:bg-pastel-darkCard rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2.5">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-rose-100/80 dark:bg-rose-950/40 text-rose-500 flex items-center justify-center">
+                  <i class="fa-solid fa-notes-medical"></i>
+                </div>
+                <h3 class="font-bold text-base">Puke Tracker</h3>
+              </div>
+              <button type="button" onclick="openLogModal('puke')" class="w-9 h-9 rounded-xl bg-rose-100/80 dark:bg-pastel-darkElevated text-rose-500 hover:bg-rose-500 hover:text-white transition-colors flex items-center justify-center" title="Quick log puke" aria-label="Add puke log">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+
+            <!-- Interactive Timeframe Selector -->
+            <div class="flex flex-wrap items-center gap-1.5 mb-2">
+              <select id="puke-timeframe-select" onchange="onPukeTimeframeChange()" class="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none">
+                <option value="week">Per Week (Last 7d)</option>
+                <option value="month">Per Month (Last 30d)</option>
+                <option value="since">Since Specific Date</option>
+              </select>
+              <input type="date" id="puke-since-date" onchange="updateDashboard()" class="hidden text-xs px-2 py-1 rounded-xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+            </div>
+
+            <div class="flex items-baseline gap-2 my-1">
+              <span id="dash-puke-count" class="text-3xl font-extrabold tracking-tight">0</span>
+              <span id="dash-puke-period-label" class="text-xs font-medium text-stone-500">in last 7 days</span>
+            </div>
+            <!-- Reason breakdown pills -->
+            <div id="dash-puke-reasons" class="flex flex-wrap gap-1.5 mt-1.5 text-[11px]">
+              <span class="px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-pastel-darkElevated text-stone-600 dark:text-stone-300">Hairball: 0</span>
+              <span class="px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-pastel-darkElevated text-stone-600 dark:text-stone-300">Food: 0</span>
+              <span class="px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-pastel-darkElevated text-stone-600 dark:text-stone-300">Other: 0</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+            <span id="dash-puke-last">Last: None recorded</span>
+            <button type="button" onclick="jumpToTrend('puke')" class="font-semibold text-rose-500 hover:underline">Trend &rarr;</button>
+          </div>
+        </div>
+
+        <!-- 4. LITTER BOX TRACKER CARD -->
+        <div class="bg-pastel-card dark:bg-pastel-darkCard rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-amber-100/80 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 flex items-center justify-center">
+                  <i class="fa-solid fa-box-open"></i>
+                </div>
+                <h3 class="font-bold text-base">Litter Box</h3>
+              </div>
+              <button type="button" onclick="openLogModal('litter')" class="w-9 h-9 rounded-xl bg-amber-100/80 dark:bg-pastel-darkElevated text-amber-700 dark:text-amber-400 hover:bg-amber-600 hover:text-white transition-colors flex items-center justify-center" title="Quick log litter box cleaning" aria-label="Add litter log">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+            <div class="flex items-center justify-between my-1">
+              <div>
+                <span id="dash-litter-last-type" class="text-lg font-bold block">No logs yet</span>
+                <span id="dash-litter-by" class="text-xs text-stone-500 dark:text-stone-400">Cleaned by: --</span>
+              </div>
+              <span id="dash-litter-deep-badge" class="text-[11px] font-semibold px-2.5 py-1 rounded-xl bg-pastel-sand dark:bg-pastel-darkElevated text-stone-700 dark:text-stone-300">Deep clean: --</span>
+            </div>
+            <p id="dash-litter-comment" class="text-xs text-stone-500 dark:text-stone-400 mt-1.5 truncate">No comments logged</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+            <span id="dash-litter-time">--</span>
+            <button type="button" onclick="jumpToHistory('litter')" class="font-semibold text-amber-700 dark:text-amber-400 hover:underline">Logs &rarr;</button>
+          </div>
+        </div>
+
+        <!-- 5. WATER & FOUNTAIN CARD -->
+        <div class="bg-pastel-card dark:bg-pastel-darkCard rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-pastel-slateSoft dark:bg-pastel-slate/25 text-pastel-slate flex items-center justify-center">
+                  <i class="fa-solid fa-droplet"></i>
+                </div>
+                <h3 class="font-bold text-base">Water & Fountain</h3>
+              </div>
+              <button type="button" onclick="openLogModal('water')" class="w-9 h-9 rounded-xl bg-pastel-slateSoft dark:bg-pastel-darkElevated text-pastel-slate hover:bg-pastel-slate hover:text-white transition-colors flex items-center justify-center" title="Quick log water & fountain" aria-label="Add water log">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+            <div class="flex items-center justify-between my-1">
+              <div class="flex items-baseline gap-2">
+                <span id="dash-water-level" class="text-2xl font-extrabold">--</span>
+                <span class="text-xs text-stone-500">water level</span>
+              </div>
+              <div id="dash-water-badges" class="flex flex-wrap gap-1"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-2 text-[11px] text-stone-600 dark:text-stone-300">
+              <div class="px-2.5 py-1 rounded-xl bg-pastel-cream dark:bg-pastel-darkElevated">
+                Cleaned: <strong id="dash-water-last-clean">--</strong>
+              </div>
+              <div class="px-2.5 py-1 rounded-xl bg-pastel-cream dark:bg-pastel-darkElevated">
+                Filter: <strong id="dash-water-last-filter">--</strong>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+            <span id="dash-water-time">No entries yet</span>
+            <button type="button" onclick="jumpToHistory('water')" class="font-semibold text-pastel-slate hover:underline">Logs &rarr;</button>
+          </div>
+        </div>
+
+        <!-- 6. VACCINES & PREVENTATIVES CARD -->
+        <div class="bg-pastel-card dark:bg-pastel-darkCard rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-emerald-100/80 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <i class="fa-solid fa-syringe"></i>
+                </div>
+                <h3 class="font-bold text-base">Vaccines & Preventatives</h3>
+              </div>
+              <button type="button" onclick="openLogModal('vaccine')" class="w-9 h-9 rounded-xl bg-emerald-100/80 dark:bg-pastel-darkElevated text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-colors flex items-center justify-center" title="Quick log vaccine or preventative" aria-label="Add vaccine">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+            <div id="dash-vaccine-summary" class="space-y-1.5 my-1 text-xs">
+              <p class="text-stone-500 dark:text-stone-400">No vaccines or preventatives logged yet.</p>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+            <span id="dash-vaccine-next">Next due: --</span>
+            <button type="button" onclick="jumpToHistory('vaccine')" class="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">All &rarr;</button>
+          </div>
+        </div>
+
+        <!-- 7. FOOD PURCHASES CARD -->
+        <div class="bg-pastel-card dark:bg-pastel-darkCard rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-purple-100/80 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                  <i class="fa-solid fa-bag-shopping"></i>
+                </div>
+                <h3 class="font-bold text-base">Food Purchases</h3>
+              </div>
+              <button type="button" onclick="openLogModal('purchase')" class="w-9 h-9 rounded-xl bg-purple-100/80 dark:bg-pastel-darkElevated text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-colors flex items-center justify-center" title="Quick log food purchase" aria-label="Add food purchase">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+            <div class="my-1">
+              <span id="dash-purchase-name" class="text-base font-bold block truncate">No purchases logged</span>
+              <span id="dash-purchase-type" class="text-xs text-stone-500 dark:text-stone-400 block mt-0.5">Track brands, wet/dry types & bag sizes</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+            <span id="dash-purchase-date">--</span>
+            <button type="button" onclick="jumpToHistory('purchase')" class="font-semibold text-purple-600 dark:text-purple-400 hover:underline">History &rarr;</button>
+          </div>
+        </div>
+
+        <!-- 8. VET VISITS CARD -->
+        <div class="bg-pastel-card dark:bg-pastel-darkCard rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-teal-100/80 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                  <i class="fa-solid fa-stethoscope"></i>
+                </div>
+                <h3 class="font-bold text-base">Vet Visits</h3>
+              </div>
+              <button type="button" onclick="openLogModal('vet')" class="w-9 h-9 rounded-xl bg-teal-100/80 dark:bg-pastel-darkElevated text-teal-600 dark:text-teal-400 hover:bg-teal-600 hover:text-white transition-colors flex items-center justify-center" title="Quick log vet visit" aria-label="Add vet visit">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+            <div class="my-1">
+              <span id="dash-vet-reason" class="text-base font-bold block truncate">No vet visits logged</span>
+              <span id="dash-vet-notes" class="text-xs text-stone-500 dark:text-stone-400 block mt-0.5 truncate">Log checkups, diagnoses & prescriptions</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+            <span id="dash-vet-date">--</span>
+            <button type="button" onclick="jumpToHistory('vet')" class="font-semibold text-teal-600 dark:text-teal-400 hover:underline">Visits &rarr;</button>
+          </div>
+        </div>
+
+        <!-- 9. GENERIC EVENTS CARD -->
+        <div class="bg-pastel-card dark:bg-pastel-darkCard rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-indigo-100/80 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <h3 class="font-bold text-base">Generic Events</h3>
+              </div>
+              <button type="button" onclick="openLogModal('event')" class="w-9 h-9 rounded-xl bg-indigo-100/80 dark:bg-pastel-darkElevated text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors flex items-center justify-center" title="Quick log generic event" aria-label="Add event">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+            <div class="my-1">
+              <span id="dash-event-title" class="text-base font-bold block truncate">No events logged</span>
+              <span id="dash-event-desc" class="text-xs text-stone-500 dark:text-stone-400 block mt-0.5 truncate">Nail trims, grooming, behavior or milestones</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+            <span id="dash-event-date">--</span>
+            <button type="button" onclick="jumpToHistory('event')" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Events &rarr;</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 2: TRENDS & ANALYTICS ==================== -->
+    <section id="view-trends" class="hidden space-y-5">
+      <div class="bg-pastel-card dark:bg-pastel-darkCard rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div>
+            <h2 class="text-lg font-bold">Trends Over Time</h2>
+            <p class="text-xs text-stone-500 dark:text-stone-400">Analyze how weight, food intake, pukes, and care routines change over time</p>
+          </div>
+          <!-- Timeframe Filter Buttons -->
+          <div class="inline-flex p-1 rounded-xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 text-xs font-semibold">
+            <button type="button" onclick="setTrendRange(7)" id="range-7" class="trend-range-btn px-3 py-1.5 rounded-lg text-stone-600 dark:text-stone-300">7D</button>
+            <button type="button" onclick="setTrendRange(30)" id="range-30" class="trend-range-btn px-3 py-1.5 rounded-lg bg-pastel-sage text-white">30D</button>
+            <button type="button" onclick="setTrendRange(90)" id="range-90" class="trend-range-btn px-3 py-1.5 rounded-lg text-stone-600 dark:text-stone-300">90D</button>
+            <button type="button" onclick="setTrendRange(3650)" id="range-3650" class="trend-range-btn px-3 py-1.5 rounded-lg text-stone-600 dark:text-stone-300">All</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Weight Chart -->
+          <div class="p-4 rounded-2xl bg-pastel-cream/70 dark:bg-pastel-darkElevated/60 border border-stone-200/60 dark:border-stone-700">
+            <h3 class="text-sm font-bold mb-3 flex items-center gap-2"><i class="fa-solid fa-weight-scale text-pastel-sage"></i> Weight (kg)</h3>
+            <div class="h-60 relative">
+              <canvas id="chart-weight"></canvas>
+            </div>
+          </div>
+
+          <!-- Daily Food Intake Chart -->
+          <div class="p-4 rounded-2xl bg-pastel-cream/70 dark:bg-pastel-darkElevated/60 border border-stone-200/60 dark:border-stone-700">
+            <h3 class="text-sm font-bold mb-3 flex items-center gap-2"><i class="fa-solid fa-bowl-food text-pastel-peach"></i> Daily Food Intake (g)</h3>
+            <div class="h-60 relative">
+              <canvas id="chart-food"></canvas>
+            </div>
+          </div>
+
+          <!-- Pukes Over Time (Grouped by Reason) -->
+          <div class="p-4 rounded-2xl bg-pastel-cream/70 dark:bg-pastel-darkElevated/60 border border-stone-200/60 dark:border-stone-700">
+            <h3 class="text-sm font-bold mb-3 flex items-center gap-2"><i class="fa-solid fa-notes-medical text-rose-500"></i> Pukes by Reason</h3>
+            <div class="h-60 relative">
+              <canvas id="chart-puke"></canvas>
+            </div>
+          </div>
+
+          <!-- Care Activity (Litter & Water Logs) -->
+          <div class="p-4 rounded-2xl bg-pastel-cream/70 dark:bg-pastel-darkElevated/60 border border-stone-200/60 dark:border-stone-700">
+            <h3 class="text-sm font-bold mb-3 flex items-center gap-2"><i class="fa-solid fa-droplet text-pastel-slate"></i> Litter & Water Care Activity</h3>
+            <div class="h-60 relative">
+              <canvas id="chart-care"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 3: VIEWABLE & EDITABLE HISTORY ==================== -->
+    <section id="view-history" class="hidden space-y-4">
+      <div class="bg-pastel-card dark:bg-pastel-darkCard rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-lg font-bold">Complete History</h2>
+            <p class="text-xs text-stone-500 dark:text-stone-400">Search, filter, edit, or delete any logged entry</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="relative flex-1 sm:flex-initial">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs"></i>
+              <input type="text" id="history-search" oninput="renderHistoryList()" placeholder="Search notes, food, vet..." class="w-full sm:w-52 pl-8 pr-3 py-2 rounded-xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 text-xs focus:outline-none focus:ring-2 focus:ring-pastel-sage" />
+            </div>
+            <select id="history-category-filter" onchange="renderHistoryList()" class="px-3 py-2 rounded-xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 text-xs font-semibold focus:outline-none">
+              <option value="all">All Categories</option>
+              <option value="weight">Weight</option>
+              <option value="food">Food Intake</option>
+              <option value="purchase">Food Purchases</option>
+              <option value="puke">Pukes</option>
+              <option value="litter">Litter Box</option>
+              <option value="water">Water & Fountain</option>
+              <option value="vaccine">Vaccines & Preventatives</option>
+              <option value="vet">Vet Visits</option>
+              <option value="event">Generic Events</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="history-list-container" class="space-y-2.5">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODAL 1: LOG / EDIT ENTRY ==================== -->
+  <div id="log-modal" class="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-pastel-card dark:bg-pastel-darkCard border border-stone-200 dark:border-stone-700 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+        <h3 id="log-modal-title" class="font-bold text-lg">Log New Entry</h3>
+        <button type="button" onclick="closeModal('log-modal')" class="w-8 h-8 rounded-full bg-stone-100 dark:bg-pastel-darkElevated flex items-center justify-center hover:opacity-80">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Category Tabs (Hidden when editing an existing entry) -->
+      <div id="log-category-tabs" class="flex overflow-x-auto no-scrollbar px-4 pt-3 pb-2 gap-1.5 border-b border-stone-200 dark:border-stone-800 bg-pastel-cream/50 dark:bg-pastel-charcoal/40">
+        <button type="button" onclick="selectLogCategory('weight')" data-cat="weight" class="cat-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap">Weight</button>
+        <button type="button" onclick="selectLogCategory('food')" data-cat="food" class="cat-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap">Food Intake</button>
+        <button type="button" onclick="selectLogCategory('puke')" data-cat="puke" class="cat-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap">Puke</button>
+        <button type="button" onclick="selectLogCategory('litter')" data-cat="litter" class="cat-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap">Litter Box</button>
+        <button type="button" onclick="selectLogCategory('water')" data-cat="water" class="cat-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap">Water</button>
+        <button type="button" onclick="selectLogCategory('vaccine')" data-cat="vaccine" class="cat-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap">Vaccine</button>
+        <button type="button" onclick="selectLogCategory('purchase')" data-cat="purchase" class="cat-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap">Food Buy</button>
+        <button type="button" onclick="selectLogCategory('vet')" data-cat="vet" class="cat-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap">Vet Visit</button>
+        <button type="button" onclick="selectLogCategory('event')" data-cat="event" class="cat-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap">Event</button>
+      </div>
+
+      <!-- Form Body -->
+      <form id="entry-form" onsubmit="handleSaveEntry(event)" class="p-5 overflow-y-auto custom-scrollbar space-y-4 text-sm">
+        <input type="hidden" id="entry-id" />
+        <input type="hidden" id="entry-type" value="weight" />
+
+        <!-- Common Date/Time Field -->
+        <div>
+          <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Date & Time</label>
+          <input type="datetime-local" id="entry-datetime" required class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none focus:ring-2 focus:ring-pastel-sage" />
+        </div>
+
+        <!-- 1. WEIGHT FIELDS -->
+        <div id="fields-weight" class="cat-fields space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Weight (kg)</label>
+            <input type="number" step="0.01" min="0.1" max="30" id="f-weight-kg" placeholder="e.g. 4.35" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none focus:ring-2 focus:ring-pastel-sage font-semibold" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Notes (optional)</label>
+            <input type="text" id="f-weight-notes" placeholder="e.g. Before breakfast" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+          </div>
+        </div>
+
+        <!-- 2. DAILY FOOD INTAKE FIELDS (Bowl Before & After Refilling) -->
+        <div id="fields-food" class="cat-fields hidden space-y-3">
+          <div class="p-3 rounded-2xl bg-pastel-peachSoft/60 dark:bg-pastel-darkElevated text-xs text-stone-600 dark:text-stone-300">
+            Weigh the bowl before refilling (to see how much was eaten since last meal), then weigh after refilling so the next meal calculates automatically.
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Bowl Before Refill (g)</label>
+              <input type="number" step="1" min="0" id="f-food-before" oninput="calculateFoodEaten()" placeholder="e.g. 165" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Bowl After Refill (g)</label>
+              <input type="number" step="1" min="0" id="f-food-after" oninput="calculateFoodEaten()" placeholder="e.g. 225" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Empty Bowl Tare (g)</label>
+              <input type="number" step="1" min="0" id="f-food-tare" oninput="calculateFoodEaten()" placeholder="e.g. 150" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-pastel-peach mb-1">Grams Eaten (auto or manual)</label>
+              <input type="number" step="1" min="0" id="f-food-eaten" placeholder="e.g. 45" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-peachSoft/50 dark:bg-pastel-darkElevated border border-pastel-peach/50 font-bold focus:outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Food Type / Brand (optional)</label>
+            <input type="text" id="f-food-type" placeholder="e.g. Dry kibble or Chicken wet pouch" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+          </div>
+        </div>
+
+        <!-- 3. PUKE FIELDS -->
+        <div id="fields-puke" class="cat-fields hidden space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Reason</label>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="cursor-pointer">
+                <input type="radio" name="puke-reason" value="Hairball" checked class="peer hidden" />
+                <div class="text-center py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700 bg-pastel-cream dark:bg-pastel-darkElevated peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 text-xs font-semibold transition-all">Hairball</div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="puke-reason" value="Food" class="peer hidden" />
+                <div class="text-center py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700 bg-pastel-cream dark:bg-pastel-darkElevated peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 text-xs font-semibold transition-all">Food</div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="puke-reason" value="Other" class="peer hidden" />
+                <div class="text-center py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700 bg-pastel-cream dark:bg-pastel-darkElevated peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 text-xs font-semibold transition-all">Other</div>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Notes / Appearance</label>
+            <input type="text" id="f-puke-notes" placeholder="e.g. Undigested kibble, ate too fast" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+          </div>
+        </div>
+
+        <!-- 4. LITTER BOX FIELDS -->
+        <div id="fields-litter" class="cat-fields hidden space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Type of Cleaning</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="cursor-pointer">
+                <input type="radio" name="litter-clean-type" value="Normal Scoop" checked class="peer hidden" />
+                <div class="text-center py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700 bg-pastel-cream dark:bg-pastel-darkElevated peer-checked:bg-amber-600 peer-checked:text-white peer-checked:border-amber-600 text-xs font-semibold transition-all">Normal Scoop</div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="litter-clean-type" value="Deep Clean" class="peer hidden" />
+                <div class="text-center py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700 bg-pastel-cream dark:bg-pastel-darkElevated peer-checked:bg-amber-600 peer-checked:text-white peer-checked:border-amber-600 text-xs font-semibold transition-all">Deep Clean</div>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Who Cleaned It?</label>
+            <div class="flex flex-wrap gap-1.5 mb-2">
+              <button type="button" onclick="setLitterCleaner('Me')" class="px-3 py-1 rounded-xl bg-pastel-sand dark:bg-pastel-darkElevated text-xs font-semibold hover:bg-pastel-sage hover:text-white">Me</button>
+              <button type="button" onclick="setLitterCleaner('Wife')" class="px-3 py-1 rounded-xl bg-pastel-sand dark:bg-pastel-darkElevated text-xs font-semibold hover:bg-pastel-sage hover:text-white">Wife</button>
+            </div>
+            <input type="text" id="f-litter-cleaner" value="Me" placeholder="Enter name (e.g. Me, Wife)" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Stool / Health Observation</label>
+            <select id="f-litter-stool" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none">
+              <option value="Normal">Normal</option>
+              <option value="Soft / Loose">Soft / Loose</option>
+              <option value="Diarrhea">Diarrhea</option>
+              <option value="Constipated / Dry">Constipated / Dry</option>
+              <option value="Straining / Frequent">Straining / Frequent</option>
+              <option value="Pee Only">Pee Only</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Comments</label>
+            <textarea id="f-litter-comments" rows="2" placeholder="Any observations or comments..." class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none"></textarea>
+          </div>
+        </div>
+
+        <!-- 5. WATER & FOUNTAIN FIELDS -->
+        <div id="fields-water" class="cat-fields hidden space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Current Water Level</label>
+            <select id="f-water-level" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none font-semibold">
+              <option value="Full">Full (100%)</option>
+              <option value="75%" selected>75%</option>
+              <option value="50%">50%</option>
+              <option value="25%">25%</option>
+              <option value="Empty">Empty (0%)</option>
+            </select>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200/70 dark:border-stone-700 space-y-2.5">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" id="f-water-refill" class="w-4 h-4 accent-pastel-slate rounded" />
+              <span class="text-xs font-semibold">Refill Done</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" id="f-water-cleaned" class="w-4 h-4 accent-pastel-slate rounded" />
+              <span class="text-xs font-semibold">Bowl / Fountain Cleaned</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" id="f-water-filter" class="w-4 h-4 accent-pastel-slate rounded" />
+              <span class="text-xs font-semibold">Filter Changed</span>
+            </label>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Notes (optional)</label>
+            <input type="text" id="f-water-notes" placeholder="e.g. Drinking well today" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+          </div>
+        </div>
+
+        <!-- 6. VACCINES & PREVENTATIVES FIELDS -->
+        <div id="fields-vaccine" class="cat-fields hidden space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Vaccine / Treatment Name</label>
+            <input type="text" id="f-vac-name" placeholder="e.g. FVRCP, Rabies, Flea/Tick Spot-on" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Next Due Date</label>
+              <input type="date" id="f-vac-due" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Lot # / Vet (optional)</label>
+              <input type="text" id="f-vac-lot" placeholder="Batch or Vet" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. FOOD PURCHASES FIELDS -->
+        <div id="fields-purchase" class="cat-fields hidden space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Food Brand & Product Name</label>
+            <input type="text" id="f-buy-name" placeholder="e.g. Royal Canin Indoor Adult" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Type</label>
+              <select id="f-buy-type" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none">
+                <option value="Dry Kibble">Dry Kibble</option>
+                <option value="Wet Cans / Pouches">Wet Cans / Pouches</option>
+                <option value="Treats / Dental">Treats / Dental</option>
+                <option value="Prescription Diet">Prescription Diet</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Quantity / Weight</label>
+              <input type="text" id="f-buy-qty" placeholder="e.g. 2kg bag / 12 cans" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 8. VET VISITS FIELDS -->
+        <div id="fields-vet" class="cat-fields hidden space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Reason for Vet Visit</label>
+            <input type="text" id="f-vet-reason" placeholder="e.g. Annual wellness checkup" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Clinic / Doctor</label>
+            <input type="text" id="f-vet-clinic" placeholder="e.g. Dr. Smith - Valley Vet" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Notes & Follow-up</label>
+            <textarea id="f-vet-notes" rows="2" placeholder="Diagnosis, medications, next visit..." class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none"></textarea>
+          </div>
+        </div>
+
+        <!-- 9. GENERIC EVENT FIELDS -->
+        <div id="fields-event" class="cat-fields hidden space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Event Title</label>
+            <input type="text" id="f-event-title" placeholder="e.g. Nail trim, Grooming, New toy" class="w-full px-3.5 py-2.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Details</label>
+            <textarea id="f-event-desc" rows="2" placeholder="Notes about this event..." class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 focus:outline-none"></textarea>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-3 rounded-2xl bg-pastel-sage hover:bg-[#6A8E79] text-white font-bold text-sm shadow-sm transition-all active:scale-98">
+            Save Entry
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: EDIT PET ID & PASSPORT ==================== -->
+  <div id="passport-modal" class="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-pastel-card dark:bg-pastel-darkCard border border-stone-200 dark:border-stone-700 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+        <h3 class="font-bold text-lg">Edit Pet ID & Passport</h3>
+        <button type="button" onclick="closeModal('passport-modal')" class="w-8 h-8 rounded-full bg-stone-100 dark:bg-pastel-darkElevated flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form onsubmit="savePassportDetails(event)" class="p-5 space-y-3.5 text-sm max-h-[82vh] overflow-y-auto custom-scrollbar">
+        <div>
+          <label class="block text-xs font-semibold text-stone-500 mb-1">Microchip Number</label>
+          <input type="text" id="p-edit-microchip" placeholder="e.g. 985141002938421" class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 font-mono" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 mb-1">Date of Birth</label>
+            <input type="date" id="p-edit-dob" class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 mb-1">Sex / Neutered</label>
+            <input type="text" id="p-edit-sex" placeholder="Female (Spayed)" class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 mb-1">Breed</label>
+            <input type="text" id="p-edit-breed" placeholder="Domestic Shorthair" class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 mb-1">Coat Color</label>
+            <input type="text" id="p-edit-color" placeholder="Tabby / Calico" class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-500 mb-1">Insurance Provider & Policy #</label>
+          <input type="text" id="p-edit-insurance" placeholder="e.g. Trupanion #TR-99120" class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-500 mb-1">Registration / License Number</label>
+          <input type="text" id="p-edit-license" placeholder="e.g. City Tag #44812" class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 mb-1">Emergency Vet Clinic</label>
+            <input type="text" id="p-edit-vet-clinic" placeholder="24/7 Pet Hospital" class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-500 mb-1">Emergency Vet Phone</label>
+            <input type="tel" id="p-edit-vet-phone" placeholder="555-019-9382" class="w-full px-3.5 py-2 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700" />
+          </div>
+        </div>
+        <button type="submit" class="w-full py-3 rounded-2xl bg-pastel-slate text-white font-bold text-sm mt-2">Save Passport Info</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: DATA, JSON EXPORT & PARTNER SMART MERGE ==================== -->
+  <div id="data-modal" class="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-pastel-card dark:bg-pastel-darkCard border border-stone-200 dark:border-stone-700 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <i class="fa-solid fa-arrows-rotate text-pastel-sage"></i> Data, Backup & Partner Sync
+        </h3>
+        <button type="button" onclick="closeModal('data-modal')" class="w-8 h-8 rounded-full bg-stone-100 dark:bg-pastel-darkElevated flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto custom-scrollbar space-y-5 text-xs sm:text-sm">
+        <!-- Guarantee Notice -->
+        <div class="p-3 rounded-2xl bg-pastel-sageSoft/80 dark:bg-pastel-sage/15 border border-pastel-sage/30 text-xs text-stone-700 dark:text-stone-200 flex items-start gap-2.5">
+          <i class="fa-solid fa-feather-pointed text-pastel-sage mt-0.5"></i>
+          <div>
+            <strong>Lightweight JSON Only:</strong> Profile photos stay stored locally on each phone and are never included as base64 text in JSON exports—only the local filename reference is saved so copy/paste sharing stays compact.
+          </div>
+        </div>
+
+        <!-- 1. Export Section -->
+        <div class="space-y-2.5">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500">1. Export Logs (File or Copy/Paste Text)</h4>
+          <div class="grid grid-cols-2 gap-2.5">
+            <button type="button" onclick="downloadJsonFile()" class="py-2.5 px-3 rounded-2xl bg-pastel-sage text-white font-semibold flex items-center justify-center gap-2 hover:opacity-95">
+              <i class="fa-solid fa-download"></i> Download .JSON
+            </button>
+            <button type="button" onclick="copyJsonText()" class="py-2.5 px-3 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 font-semibold flex items-center justify-center gap-2 hover:border-pastel-sage">
+              <i class="fa-regular fa-copy"></i> Copy JSON Text
+            </button>
+          </div>
+          <textarea id="export-json-box" readonly rows="3" class="w-full p-3 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 font-mono text-[11px] focus:outline-none"></textarea>
+        </div>
+
+        <!-- 2. Partner Smart Merge & Import Section -->
+        <div class="space-y-2.5 pt-4 border-t border-stone-200 dark:border-stone-800">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500">2. Partner Smart Merge & Import</h4>
+          <p class="text-xs text-stone-500 dark:text-stone-400">
+            Paste JSON text from your wife's phone or load her `.json` file. <strong>Smart Merge</strong> checks every entry and adds only the missing ones so zero duplicates are created.
+          </p>
+          <textarea id="import-json-box" rows="4" oninput="previewPartnerMerge()" placeholder="Paste JSON text here or choose a .json file below..." class="w-full p-3 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-pastel-sage"></textarea>
+
+          <!-- Live Merge Preview Box -->
+          <div id="merge-preview-box" class="hidden p-3 rounded-2xl bg-pastel-slateSoft/70 dark:bg-pastel-darkElevated border border-pastel-slate/30 text-xs">
+            <span id="merge-preview-text" class="font-semibold">Ready to analyze...</span>
+          </div>
+
+          <div class="flex flex-wrap gap-2.5">
+            <label class="flex-1 py-2.5 px-3 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated border border-stone-200 dark:border-stone-700 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer hover:border-pastel-slate">
+              <i class="fa-solid fa-folder-open text-pastel-slate"></i> Load .JSON File
+              <input type="file" accept=".json,application/json" class="hidden" onchange="loadJsonFileToBox(event)" />
+            </label>
+            <button type="button" onclick="executeSmartMerge()" class="flex-1 py-2.5 px-3 rounded-2xl bg-pastel-slate text-white font-semibold text-xs flex items-center justify-center gap-2 hover:opacity-95">
+              <i class="fa-solid fa-code-merge"></i> Smart Merge (No Duplicates)
+            </button>
+          </div>
+          <div class="text-right">
+            <button type="button" onclick="executeOverwriteImport()" class="text-[11px] text-rose-500 hover:underline font-medium">
+              Or replace all local data with imported JSON
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 4: INSTALL APP (PWA) ==================== -->
+  <div id="install-modal" class="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-pastel-card dark:bg-pastel-darkCard border border-stone-200 dark:border-stone-700 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+        <h3 class="font-bold text-lg">Install on Your Phone</h3>
+        <button type="button" onclick="closeModal('install-modal')" class="w-8 h-8 rounded-full bg-stone-100 dark:bg-pastel-darkElevated flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-4 text-xs sm:text-sm">
+        <p class="text-stone-600 dark:text-stone-300">Add this tracker to your phone's Home Screen so it launches full-screen like a native app:</p>
+        <div id="native-install-trigger-wrap" class="hidden">
+          <button type="button" onclick="triggerNativeInstall()" class="w-full py-3 rounded-2xl bg-pastel-sage text-white font-bold">
+            <i class="fa-solid fa-download mr-1.5"></i> Install App Now
+          </button>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated space-y-1.5">
+          <strong class="block text-pastel-slate"><i class="fa-brands fa-apple mr-1"></i> iPhone / iPad (Safari):</strong>
+          <p class="text-xs text-stone-600 dark:text-stone-300">Tap the <strong>Share</strong> icon (<i class="fa-solid fa-arrow-up-from-bracket"></i>) at the bottom of Safari, scroll down, and tap <strong>"Add to Home Screen"</strong>.</p>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-pastel-cream dark:bg-pastel-darkElevated space-y-1.5">
+          <strong class="block text-pastel-sage"><i class="fa-brands fa-android mr-1"></i> Android (Chrome):</strong>
+          <p class="text-xs text-stone-600 dark:text-stone-300">Tap the <strong>three-dot menu</strong> (<i class="fa-solid fa-ellipsis-vertical"></i>) in the top right and select <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT APPLICATION LOGIC ==================== -->
+  <script>
+    // Separate storage keys so the avatar image NEVER bloats JSON exports
+    const STORAGE_KEY_DATA = 'cat_tracker_data_v2';
+    const STORAGE_KEY_AVATAR = 'cat_tracker_avatar_img';
+    const STORAGE_KEY_THEME = 'cat_tracker_dark_mode';
+
+    // Default Application State
+    let state = {
+      pet: {
+        name: 'Mochi',
+        microchip: '',
+        dob: '',
+        breed: 'Domestic Shorthair',
+        color: '',
+        sex: 'Female',
+        insurance: '',
+        license: '',
+        vetClinic: '',
+        vetPhone: '',
+        photoMeta: null // Stores ONLY lightweight file metadata { fileName, lastUpdated }, never base64!
+      },
+      settings: {
+        lastBowlTare: 150
+      },
+      entries: []
+    };
+
+    let currentTrendDays = 30;
+    let charts = {};
+    let deferredInstallPrompt = null;
+
+    // Generate Dynamic PWA Web App Manifest
+    (function setupManifest() {
+      const svgIcon = encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="32" fill="#7A9E89"/><path d="M36 44l10 18h36l10-18 6 38c0 16-15 26-34 26S30 98 30 82l6-38z" fill="#F7F5F0"/><circle cx="52" cy="74" r="4" fill="#2B2F36"/><circle cx="76" cy="74" r="4" fill="#2B2F36"/><path d="M60 82h8l-4 5z" fill="#D98A6C"/></svg>`
+      );
+      const manifest = {
+        name: 'Cat Care & Health Tracker',
+        short_name: 'Cat Care',
+        start_url: '.',
+        display: 'standalone',
+        background_color: '#F7F5F0',
+        theme_color: '#7A9E89',
+        icons: [{ src: `data:image/svg+xml,${svgIcon}`, sizes: '192x192', type: 'image/svg+xml' }]
+      };
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+      document.head.appendChild(link);
+    })();
+
+    // Initialize App on Load
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      loadState();
+      loadLocalAvatar();
+      renderAll();
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        document.getElementById('native-install-trigger-wrap').classList.remove('hidden');
+      });
+    });
+
+    // ==================== THEME (SINGLE DARK/LIGHT TOGGLE) ====================
+    function initTheme() {
+      const savedDark = localStorage.getItem(STORAGE_KEY_THEME);
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = savedDark !== null ? savedDark === 'true' : prefersDark;
+      applyDarkMode(isDark);
+    }
+
+    function toggleDarkMode() {
+      const isCurrentlyDark = document.documentElement.classList.contains('dark');
+      const nextDark = !isCurrentlyDark;
+      applyDarkMode(nextDark);
+      localStorage.setItem(STORAGE_KEY_THEME, String(nextDark));
+      if (!document.getElementById('view-trends').classList.contains('hidden')) {
+        renderTrendCharts();
+      }
+    }
+
+    function applyDarkMode(isDark) {
+      const html = document.documentElement;
+      const icon = document.getElementById('dark-mode-icon');
+      const metaTheme = document.getElementById('meta-theme-color');
+      if (isDark) {
+        html.classList.add('dark');
+        icon.className = 'fa-solid fa-sun text-sm';
+        metaTheme.setAttribute('content', '#17191C');
+      } else {
+        html.classList.remove('dark');
+        icon.className = 'fa-solid fa-moon text-sm';
+        metaTheme.setAttribute('content', '#F7F5F0');
+      }
+    }
+
+    // ==================== PERSISTENCE & SANITIZATION ====================
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_DATA);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          state.pet = { ...state.pet, ...(parsed.pet || {}) };
+          // Strip any accidental legacy base64 if present
+          delete state.pet.avatar;
+          delete state.pet.photo;
+          delete state.pet.image;
+          state.settings = { ...state.settings, ...(parsed.settings || {}) };
+          state.entries = Array.isArray(parsed.entries) ? parsed.entries : [];
+        } else {
+          // Seed clean sample entries on first visit so dashboard feels immediately helpful
+          seedInitialSampleData();
+        }
+      } catch (err) {
+        console.error('Failed to load saved data:', err);
+      }
+    }
+
+    function saveState() {
+      try {
+        // Ensure zero image blobs are ever stored in main state
+        const cleanPet = { ...state.pet };
+        delete cleanPet.avatar;
+        delete cleanPet.photo;
+        delete cleanPet.image;
+        state.pet = cleanPet;
+        localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(state));
+      } catch (err) {
+        showToast('Storage warning: could not save locally', true);
+      }
+    }
+
+    function seedInitialSampleData() {
+      const now = new Date();
+      const d = (daysAgo, hour = 9) => {
+        const dt = new Date(now);
+        dt.setDate(dt.getDate() - daysAgo);
+        dt.setHours(hour, 0, 0, 0);
+        return dt.toISOString().slice(0, 16);
+      };
+      state.entries = [
+        { id: 'seed_w1', type: 'weight', datetime: d(14, 9), weightKg: 4.30, notes: 'Morning weigh-in' },
+        { id: 'seed_w2', type: 'weight', datetime: d(2, 9), weightKg: 4.35, notes: 'Steady weight' },
+        { id: 'seed_f1', type: 'food', datetime: d(0, 8), bowlBefore: 165, bowlAfter: 220, tare: 150, gramsEaten: 55, foodType: 'Dry Kibble + Wet' },
+        { id: 'seed_l1', type: 'litter', datetime: d(0, 10), cleanType: 'Normal Scoop', cleaner: 'Me', stool: 'Normal', comments: 'All good' },
+        { id: 'seed_wt1', type: 'water', datetime: d(0, 8), level: 'Full', refillDone: true, cleaned: true, filterChanged: false, notes: 'Fresh filtered water' },
+        { id: 'seed_p1', type: 'puke', datetime: d(4, 15), reason: 'Hairball', notes: 'Small hairball on mat' }
+      ];
+      saveState();
+    }
+
+    // ==================== CAT AVATAR (LOCAL DEVICE ONLY, NEVER IN JSON) ====================
+    function loadLocalAvatar() {
+      const localImg = localStorage.getItem(STORAGE_KEY_AVATAR);
+      if (localImg) {
+        document.getElementById('pet-avatar-img').src = localImg;
+      }
+    }
+
+    function handleAvatarUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Resize locally for smooth mobile localStorage performance, kept strictly separate from JSON state
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+          const canvas = document.createElement('canvas');
+          const maxSize = 320;
+          let w = img.width;
+          let h = img.height;
+          if (w > h && w > maxSize) {
+            h = Math.round((h * maxSize) / w);
+            w = maxSize;
+          } else if (h > maxSize) {
+            w = Math.round((w * maxSize) / h);
+            h = maxSize;
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+          try {
+            localStorage.setItem(STORAGE_KEY_AVATAR, compressedDataUrl);
+            document.getElementById('pet-avatar-img').src = compressedDataUrl;
+            // Store ONLY a lightweight file reference in main pet state
+            state.pet.photoMeta = {
+              fileName: file.name,
+              lastUpdated: new Date().toISOString()
+            };
+            saveState();
+            showToast('Photo updated on this device');
+          } catch (err) {
+            showToast('Image too large for browser storage', true);
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ==================== PET NAME & PASSPORT DRAWER ====================
+    function startEditingName() {
+      const title = document.getElementById('pet-name-title');
+      const input = document.getElementById('pet-name-input');
+      input.value = state.pet.name;
+      title.classList.add('hidden');
+      input.classList.remove('hidden');
+      input.focus();
+      input.select();
+    }
+
+    function commitNameEdit() {
+      const title = document.getElementById('pet-name-title');
+      const input = document.getElementById('pet-name-input');
+      const val = input.value.trim();
+      if (val) {
+        state.pet.name = val;
+        saveState();
+      }
+      title.textContent = state.pet.name;
+      document.title = `${state.pet.name} — Care Tracker`;
+      input.classList.add('hidden');
+      title.classList.remove('hidden');
+    }
+
+    function togglePassportDrawer() {
+      const drawer = document.getElementById('passport-drawer');
+      const arrow = document.getElementById('passport-arrow');
+      drawer.classList.toggle('hidden');
+      arrow.classList.toggle('rotate-180');
+    }
+
+    function openPassportEditModal() {
+      document.getElementById('p-edit-microchip').value = state.pet.microchip || '';
+      document.getElementById('p-edit-dob').value = state.pet.dob || '';
+      document.getElementById('p-edit-sex').value = state.pet.sex || '';
+      document.getElementById('p-edit-breed').value = state.pet.breed || '';
+      document.getElementById('p-edit-color').value = state.pet.color || '';
+      document.getElementById('p-edit-insurance').value = state.pet.insurance || '';
+      document.getElementById('p-edit-license').value = state.pet.license || '';
+      document.getElementById('p-edit-vet-clinic').value = state.pet.vetClinic || '';
+      document.getElementById('p-edit-vet-phone').value = state.pet.vetPhone || '';
+      openModal('passport-modal');
+    }
+
+    function savePassportDetails(e) {
+      e.preventDefault();
+      state.pet.microchip = document.getElementById('p-edit-microchip').value.trim();
+      state.pet.dob = document.getElementById('p-edit-dob').value;
+      state.pet.sex = document.getElementById('p-edit-sex').value.trim();
+      state.pet.breed = document.getElementById('p-edit-breed').value.trim();
+      state.pet.color = document.getElementById('p-edit-color').value.trim();
+      state.pet.insurance = document.getElementById('p-edit-insurance').value.trim();
+      state.pet.license = document.getElementById('p-edit-license').value.trim();
+      state.pet.vetClinic = document.getElementById('p-edit-vet-clinic').value.trim();
+      state.pet.vetPhone = document.getElementById('p-edit-vet-phone').value.trim();
+      saveState();
+      renderPassport();
+      closeModal('passport-modal');
+      showToast('Pet ID & Passport updated');
+    }
+
+    function calculateAgeLabel(dobStr) {
+      if (!dobStr) return '';
+      const dob = new Date(dobStr);
+      if (isNaN(dob.getTime())) return '';
+      const now = new Date();
+      let months = (now.getFullYear() - dob.getFullYear()) * 12 + (now.getMonth() - dob.getMonth());
+      if (now.getDate() < dob.getDate()) months--;
+      if (months < 0) return '';
+      const yrs = Math.floor(months / 12);
+      const remMonths = months % 12;
+      if (yrs === 0) return `${remMonths} mo`;
+      return remMonths > 0 ? `${yrs} yr ${remMonths} mo` : `${yrs} yrs`;
+    }
+
+    function renderPassport() {
+      document.getElementById('pet-name-title').textContent = state.pet.name;
+      document.title = `${state.pet.name} — Care Tracker`;
+
+      const ageStr = calculateAgeLabel(state.pet.dob);
+      const metaParts = [state.pet.breed, ageStr, state.pet.sex].filter(Boolean);
+      document.getElementById('header-pet-meta').textContent = metaParts.join(' • ') || 'Tap ID & Info to add details';
+
+      document.getElementById('id-microchip').textContent = state.pet.microchip || 'Not set';
+      document.getElementById('id-dob-age').textContent = state.pet.dob
+        ? `${state.pet.dob}${ageStr ? ' (' + ageStr + ')' : ''}`
+        : 'Not set';
+      document.getElementById('id-breed-sex').textContent =
+        [state.pet.breed, state.pet.color, state.pet.sex].filter(Boolean).join(' • ') || 'Not set';
+      document.getElementById('id-insurance').textContent = state.pet.insurance || 'Not set';
+      document.getElementById('id-license').textContent = state.pet.license || 'Not set';
+      document.getElementById('id-vet-clinic').textContent = state.pet.vetClinic || 'Not set';
+
+      const phoneLink = document.getElementById('id-vet-phone-link');
+      if (state.pet.vetPhone) {
+        phoneLink.href = `tel:${state.pet.vetPhone.replace(/\s+/g, '')}`;
+        document.getElementById('id-vet-phone-label').textContent = state.pet.vetPhone;
+        phoneLink.classList.remove('hidden');
+      } else {
+        phoneLink.classList.add('hidden');
+      }
+    }
+
+    // ==================== NAVIGATION VIEWS ====================
+    function switchMainView(viewName) {
+      ['dashboard', 'trends', 'history'].forEach((v) => {
+        const section = document.getElementById(`view-${v}`);
+        const btn = document.getElementById(`nav-${v}`);
+        if (v === viewName) {
+          section.classList.remove('hidden');
+          btn.className = 'main-nav-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white dark:bg-pastel-darkElevated text-stone-800 dark:text-white shadow-xs transition-all';
+        } else {
+          section.classList.add('hidden');
+          btn.className = 'main-nav-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-all';
+        }
+      });
+      if (viewName === 'trends') renderTrendCharts();
+      if (viewName === 'history') renderHistoryList();
+    }
+
+    function jumpToTrend(category) {
+      switchMainView('trends');
+    }
+
+    function jumpToHistory(category) {
+      document.getElementById('history-category-filter').value = category;
+      switchMainView('history');
+    }
+
+    // ==================== LOGGING & EDITING MODAL ====================
+    function getLocalNowISO() {
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000;
+      return new Date(now - offset).toISOString().slice(0, 16);
+    }
+
+    function openLogModal(category = 'weight', editEntry = null) {
+      document.getElementById('entry-form').reset();
+      document.getElementById('entry-id').value = editEntry ? editEntry.id : '';
+      document.getElementById('log-modal-title').textContent = editEntry ? 'Edit Entry' : 'Log New Entry';
+
+      const tabsRow = document.getElementById('log-category-tabs');
+      if (editEntry) {
+        tabsRow.classList.add('hidden');
+        selectLogCategory(editEntry.type);
+      } else {
+        tabsRow.classList.remove('hidden');
+        selectLogCategory(category);
+      }
+
+      document.getElementById('entry-datetime').value = editEntry ? editEntry.datetime : getLocalNowISO();
+
+      // Populate fields for specific category
+      if (category === 'food' || (editEntry && editEntry.type === 'food')) {
+        document.getElementById('f-food-tare').value = editEntry ? (editEntry.tare ?? state.settings.lastBowlTare) : state.settings.lastBowlTare;
+      }
+
+      if (editEntry) {
+        populateEditFields(editEntry);
+      }
+
+      openModal('log-modal');
+    }
+
+    function selectLogCategory(cat) {
+      document.getElementById('entry-type').value = cat;
+
+      document.querySelectorAll('.cat-tab-btn').forEach((btn) => {
+        if (btn.dataset.cat === cat) {
+          btn.className = 'cat-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-pastel-sage text-white shadow-xs';
+        } else {
+          btn.className = 'cat-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white dark:bg-pastel-darkElevated text-stone-600 dark:text-stone-300 border border-stone-200/70 dark:border-stone-700';
+        }
+      });
+
+      document.querySelectorAll('.cat-fields').forEach((div) => div.classList.add('hidden'));
+      const activeDiv = document.getElementById(`fields-${cat}`);
+      if (activeDiv) activeDiv.classList.remove('hidden');
+
+      if (cat === 'food' && !document.getElementById('f-food-tare').value) {
+        document.getElementById('f-food-tare').value = state.settings.lastBowlTare || 150;
+      }
+    }
+
+    function calculateFoodEaten() {
+      const before = parseFloat(document.getElementById('f-food-before').value);
+      const tare = parseFloat(document.getElementById('f-food-tare').value) || 0;
+      // Compare against previous meal's "bowl after refill" weight if available
+      const foodLogs = state.entries
+        .filter((e) => e.type === 'food' && typeof e.bowlAfter === 'number')
+        .sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
+      if (!isNaN(before)) {
+        if (foodLogs.length > 0 && foodLogs[0].bowlAfter >= before) {
+          document.getElementById('f-food-eaten').value = Math.max(0, Math.round(foodLogs[0].bowlAfter - before));
+        } else if (before >= tare) {
+          // Fallback: if user weighed full portion before serving vs leftover
+          const after = parseFloat(document.getElementById('f-food-after').value);
+          if (!isNaN(after) && after > before) {
+            // Bowl was weighed empty/leftover before refilling
+          }
+        }
+      }
+    }
+
+    function setLitterCleaner(name) {
+      document.getElementById('f-litter-cleaner').value = name;
+    }
+
+    function populateEditFields(entry) {
+      const t = entry.type;
+      if (t === 'weight') {
+        document.getElementById('f-weight-kg').value = entry.weightKg;
+        document.getElementById('f-weight-notes').value = entry.notes || '';
+      } else if (t === 'food') {
+        document.getElementById('f-food-before').value = entry.bowlBefore ?? '';
+        document.getElementById('f-food-after').value = entry.bowlAfter ?? '';
+        document.getElementById('f-food-tare').value = entry.tare ?? state.settings.lastBowlTare;
+        document.getElementById('f-food-eaten').value = entry.gramsEaten ?? '';
+        document.getElementById('f-food-type').value = entry.foodType || '';
+      } else if (t === 'puke') {
+        const radios = document.querySelectorAll('input[name="puke-reason"]');
+        radios.forEach((r) => (r.checked = r.value === entry.reason));
+        document.getElementById('f-puke-notes').value = entry.notes || '';
+      } else if (t === 'litter') {
+        const radios = document.querySelectorAll('input[name="litter-clean-type"]');
+        radios.forEach((r) => (r.checked = r.value === entry.cleanType));
+        document.getElementById('f-litter-cleaner').value = entry.cleaner || 'Me';
+        document.getElementById('f-litter-stool').value = entry.stool || 'Normal';
+        document.getElementById('f-litter-comments').value = entry.comments || '';
+      } else if (t === 'water') {
+        document.getElementById('f-water-level').value = entry.level || 'Full';
+        document.getElementById('f-water-refill').checked = !!entry.refillDone;
+        document.getElementById('f-water-cleaned').checked = !!entry.cleaned;
+        document.getElementById('f-water-filter').checked = !!entry.filterChanged;
+        document.getElementById('f-water-notes').value = entry.notes || '';
+      } else if (t === 'vaccine') {
+        document.getElementById('f-vac-name').value = entry.name || '';
+        document.getElementById('f-vac-due').value = entry.dueDate || '';
+        document.getElementById('f-vac-lot').value = entry.lot || '';
+      } else if (t === 'purchase') {
+        document.getElementById('f-buy-name').value = entry.name || '';
+        document.getElementById('f-buy-type').value = entry.foodType || 'Dry Kibble';
+        document.getElementById('f-buy-qty').value = entry.quantity || '';
+      } else if (t === 'vet') {
+        document.getElementById('f-vet-reason').value = entry.reason || '';
+        document.getElementById('f-vet-clinic').value = entry.clinic || '';
+        document.getElementById('f-vet-notes').value = entry.notes || '';
+      } else if (t === 'event') {
+        document.getElementById('f-event-title').value = entry.title || '';
+        document.getElementById('f-event-desc').value = entry.description || '';
+      }
+    }
+
+    function handleSaveEntry(e) {
+      e.preventDefault();
+      const existingId = document.getElementById('entry-id').value;
+      const type = document.getElementById('entry-type').value;
+      const datetime = document.getElementById('entry-datetime').value;
+
+      const entry = {
+        id: existingId || 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        type,
+        datetime
+      };
+
+      if (type === 'weight') {
+        const w = parseFloat(document.getElementById('f-weight-kg').value);
+        if (isNaN(w) || w <= 0) return showToast('Please enter a valid weight', true);
+        entry.weightKg = w;
+        entry.notes = document.getElementById('f-weight-notes').value.trim();
+      } else if (type === 'food') {
+        const before = parseFloat(document.getElementById('f-food-before').value);
+        const after = parseFloat(document.getElementById('f-food-after').value);
+        const tare = parseFloat(document.getElementById('f-food-tare').value);
+        let eaten = parseFloat(document.getElementById('f-food-eaten').value);
+        if (!isNaN(tare)) state.settings.lastBowlTare = tare;
+        if (isNaN(eaten)) eaten = 0;
+        entry.bowlBefore = isNaN(before) ? null : before;
+        entry.bowlAfter = isNaN(after) ? null : after;
+        entry.tare = isNaN(tare) ? null : tare;
+        entry.gramsEaten = eaten;
+        entry.foodType = document.getElementById('f-food-type').value.trim();
+      } else if (type === 'puke') {
+        const checked = document.querySelector('input[name="puke-reason"]:checked');
+        entry.reason = checked ? checked.value : 'Hairball';
+        entry.notes = document.getElementById('f-puke-notes').value.trim();
+      } else if (type === 'litter') {
+        const checked = document.querySelector('input[name="litter-clean-type"]:checked');
+        entry.cleanType = checked ? checked.value : 'Normal Scoop';
+        entry.cleaner = document.getElementById('f-litter-cleaner').value.trim() || 'Me';
+        entry.stool = document.getElementById('f-litter-stool').value;
+        entry.comments = document.getElementById('f-litter-comments').value.trim();
+      } else if (type === 'water') {
+        entry.level = document.getElementById('f-water-level').value;
+        entry.refillDone = document.getElementById('f-water-refill').checked;
+        entry.cleaned = document.getElementById('f-water-cleaned').checked;
+        entry.filterChanged = document.getElementById('f-water-filter').checked;
+        entry.notes = document.getElementById('f-water-notes').value.trim();
+      } else if (type === 'vaccine') {
+        const name = document.getElementById('f-vac-name').value.trim();
+        if (!name) return showToast('Please enter vaccine/treatment name', true);
+        entry.name = name;
+        entry.dueDate = document.getElementById('f-vac-due').value;
+        entry.lot = document.getElementById('f-vac-lot').value.trim();
+      } else if (type === 'purchase') {
+        const name = document.getElementById('f-buy-name').value.trim();
+        if (!name) return showToast('Please enter food product name', true);
+        entry.name = name;
+        entry.foodType = document.getElementById('f-buy-type').value;
+        entry.quantity = document.getElementById('f-buy-qty').value.trim();
+      } else if (type === 'vet') {
+        const reason = document.getElementById('f-vet-reason').value.trim();
+        if (!reason) return showToast('Please enter visit reason', true);
+        entry.reason = reason;
+        entry.clinic = document.getElementById('f-vet-clinic').value.trim();
+        entry.notes = document.getElementById('f-vet-notes').value.trim();
+      } else if (type === 'event') {
+        const title = document.getElementById('f-event-title').value.trim();
+        if (!title) return showToast('Please enter event title', true);
+        entry.title = title;
+        entry.description = document.getElementById('f-event-desc').value.trim();
+      }
+
+      if (existingId) {
+        const idx = state.entries.findIndex((item) => item.id === existingId);
+        if (idx !== -1) state.entries[idx] = entry;
+      } else {
+        state.entries.push(entry);
+      }
+
+      state.entries.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+      saveState();
+      renderAll();
+      closeModal('log-modal');
+      showToast(existingId ? 'Entry updated' : 'Entry logged');
+    }
+
+    function deleteEntry(id) {
+      state.entries = state.entries.filter((e) => e.id !== id);
+      saveState();
+      renderAll();
+      showToast('Entry deleted');
+    }
+
+    // ==================== DASHBOARD RENDERING ====================
+    function renderAll() {
+      renderPassport();
+      updateDashboard();
+      renderHistoryList();
+      if (!document.getElementById('view-trends').classList.contains('hidden')) {
+        renderTrendCharts();
+      }
+      document.getElementById('history-count-badge').textContent = state.entries.length;
+    }
+
+    function formatShortDate(dtStr) {
+      if (!dtStr) return '--';
+      const d = new Date(dtStr);
+      if (isNaN(d.getTime())) return dtStr;
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function formatDateTime(dtStr) {
+      if (!dtStr) return '--';
+      const d = new Date(dtStr);
+      if (isNaN(d.getTime())) return dtStr;
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function onPukeTimeframeChange() {
+      const sel = document.getElementById('puke-timeframe-select').value;
+      const dateInput = document.getElementById('puke-since-date');
+      if (sel === 'since') {
+        dateInput.classList.remove('hidden');
+        if (!dateInput.value) {
+          const d = new Date();
+          d.setDate(d.getDate() - 14);
+          dateInput.value = d.toISOString().slice(0, 10);
+        }
+      } else {
+        dateInput.classList.add('hidden');
+      }
+      updateDashboard();
+    }
+
+    function updateDashboard() {
+      const sorted = [...state.entries].sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
+      // 1. WEIGHT
+      const weights = sorted.filter((e) => e.type === 'weight');
+      if (weights.length > 0) {
+        document.getElementById('dash-weight-val').textContent = weights[0].weightKg.toFixed(2);
+        document.getElementById('dash-weight-date').textContent = 'Last: ' + formatShortDate(weights[0].datetime);
+        if (weights.length > 1) {
+          const diff = weights[0].weightKg - weights[1].weightKg;
+          const sign = diff > 0 ? '+' : '';
+          document.getElementById('dash-weight-delta').textContent = `${sign}${diff.toFixed(2)} kg vs prev`;
+        } else {
+          document.getElementById('dash-weight-delta').textContent = 'Baseline logged';
+        }
+      }
+
+      // 2. DAILY FOOD INTAKE
+      const foods = sorted.filter((e) => e.type === 'food');
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const todayFoodTotal = foods
+        .filter((f) => f.datetime.startsWith(todayKey))
+        .reduce((sum, f) => sum + (Number(f.gramsEaten) || 0), 0);
+      document.getElementById('dash-food-today').textContent = Math.round(todayFoodTotal);
+
+      if (foods.length > 0) {
+        const last = foods[0];
+        const bowlInfo = last.bowlAfter != null ? `Bowl refilled to ${last.bowlAfter}g` : `Last meal: ${last.gramsEaten}g`;
+        document.getElementById('dash-food-sub').textContent = last.foodType ? `${last.foodType} • ${bowlInfo}` : bowlInfo;
+
+        // Calculate 7-day daily average
+        const sevenDaysAgo = Date.now() - 7 * 86400000;
+        const recentFoods = foods.filter((f) => new Date(f.datetime).getTime() >= sevenDaysAgo);
+        const dayTotals = {};
+        recentFoods.forEach((f) => {
+          const day = f.datetime.slice(0, 10);
+          dayTotals[day] = (dayTotals[day] || 0) + (Number(f.gramsEaten) || 0);
+        });
+        const daysCount = Object.keys(dayTotals).length || 1;
+        const totalGrams = Object.values(dayTotals).reduce((a, b) => a + b, 0);
+        document.getElementById('dash-food-avg').textContent = `7d avg: ${Math.round(totalGrams / daysCount)} g/day`;
+      }
+
+      // 3. PUKE TRACKER (Timeframe Selector: Week / Month / Since Specific Date)
+      const pukes = sorted.filter((e) => e.type === 'puke');
+      const tf = document.getElementById('puke-timeframe-select').value;
+      let cutoffTime = Date.now() - 7 * 86400000;
+      let periodText = 'in last 7 days';
+
+      if (tf === 'month') {
+        cutoffTime = Date.now() - 30 * 86400000;
+        periodText = 'in last 30 days';
+      } else if (tf === 'since') {
+        const sinceVal = document.getElementById('puke-since-date').value;
+        cutoffTime = sinceVal ? new Date(sinceVal + 'T00:00:00').getTime() : 0;
+        periodText = sinceVal ? `since ${formatShortDate(sinceVal)}` : 'since selected date';
+      }
+
+      const filteredPukes = pukes.filter((p) => new Date(p.datetime).getTime() >= cutoffTime);
+      document.getElementById('dash-puke-count').textContent = filteredPukes.length;
+      document.getElementById('dash-puke-period-label').textContent = periodText;
+
+      const reasons = { Hairball: 0, Food: 0, Other: 0 };
+      filteredPukes.forEach((p) => {
+        if (reasons[p.reason] !== undefined) reasons[p.reason]++;
+        else reasons.Other++;
+      });
+      document.getElementById('dash-puke-reasons').innerHTML = `
+        <span class="px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-pastel-darkElevated text-stone-600 dark:text-stone-300">Hairball: ${reasons.Hairball}</span>
+        <span class="px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-pastel-darkElevated text-stone-600 dark:text-stone-300">Food: ${reasons.Food}</span>
+        <span class="px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-pastel-darkElevated text-stone-600 dark:text-stone-300">Other: ${reasons.Other}</span>
+      `;
+      document.getElementById('dash-puke-last').textContent = pukes.length > 0 ? 'Last: ' + formatShortDate(pukes[0].datetime) : 'Last: None recorded';
+
+      // 4. LITTER BOX
+      const litters = sorted.filter((e) => e.type === 'litter');
+      if (litters.length > 0) {
+        const lastL = litters[0];
+        document.getElementById('dash-litter-last-type').textContent = `${lastL.cleanType} (${lastL.stool || 'Normal'})`;
+        document.getElementById('dash-litter-by').textContent = `Cleaned by: ${lastL.cleaner}`;
+        document.getElementById('dash-litter-comment').textContent = lastL.comments || 'No comments';
+        document.getElementById('dash-litter-time').textContent = formatDateTime(lastL.datetime);
+
+        const lastDeep = litters.find((l) => l.cleanType === 'Deep Clean');
+        document.getElementById('dash-litter-deep-badge').textContent = lastDeep
+          ? `Deep: ${formatShortDate(lastDeep.datetime)}`
+          : 'Deep: None yet';
+      }
+
+      // 5. WATER & FOUNTAIN
+      const waters = sorted.filter((e) => e.type === 'water');
+      if (waters.length > 0) {
+        const lastW = waters[0];
+        document.getElementById('dash-water-level').textContent = lastW.level;
+        document.getElementById('dash-water-time').textContent = 'Logged: ' + formatDateTime(lastW.datetime);
+
+        const badges = [];
+        if (lastW.refillDone) badges.push('<span class="px-2 py-0.5 rounded-lg bg-pastel-slateSoft dark:bg-pastel-slate/25 text-pastel-slate text-[11px] font-semibold">Refilled</span>');
+        if (lastW.cleaned) badges.push('<span class="px-2 py-0.5 rounded-lg bg-pastel-sageSoft dark:bg-pastel-sage/25 text-pastel-sage text-[11px] font-semibold">Cleaned</span>');
+        if (lastW.filterChanged) badges.push('<span class="px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold">New Filter</span>');
+        document.getElementById('dash-water-badges').innerHTML = badges.join('');
+
+        const lastClean = waters.find((w) => w.cleaned);
+        const lastFilter = waters.find((w) => w.filterChanged);
+        document.getElementById('dash-water-last-clean').textContent = lastClean ? formatShortDate(lastClean.datetime) : '--';
+        document.getElementById('dash-water-last-filter').textContent = lastFilter ? formatShortDate(lastFilter.datetime) : '--';
+      }
+
+      // 6. VACCINES & PREVENTATIVES
+      const vaccines = sorted.filter((e) => e.type === 'vaccine');
+      const vacSummary = document.getElementById('dash-vaccine-summary');
+      const alertBanner = document.getElementById('vaccine-alert-banner');
+      if (vaccines.length > 0) {
+        vacSummary.innerHTML = vaccines.slice(0, 2).map((v) => {
+          const dueLabel = v.dueDate ? `Due ${formatShortDate(v.dueDate)}` : 'No due date';
+          return `<div class="flex items-center justify-between py-0.5">
+            <span class="font-semibold truncate pr-2">${escapeHtml(v.name)}</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-medium shrink-0">${dueLabel}</span>
+          </div>`;
+        }).join('');
+
+        // Find earliest upcoming due date
+        const withDue = vaccines
+          .filter((v) => v.dueDate)
+          .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+        if (withDue.length > 0) {
+          const nextVac = withDue[0];
+          const daysUntil = Math.ceil((new Date(nextVac.dueDate) - Date.now()) / 86400000);
+          document.getElementById('dash-vaccine-next').textContent = `Next: ${nextVac.name} (${formatShortDate(nextVac.dueDate)})`;
+          if (daysUntil <= 14) {
+            alertBanner.classList.remove('hidden');
+            document.getElementById('vaccine-alert-text').textContent =
+              daysUntil < 0
+                ? `${nextVac.name} was due ${Math.abs(daysUntil)} days ago (${nextVac.dueDate})`
+                : `${nextVac.name} is due in ${daysUntil} day(s) (${nextVac.dueDate})`;
+          } else {
+            alertBanner.classList.add('hidden');
+          }
+        }
+      } else {
+        alertBanner.classList.add('hidden');
+      }
+
+      // 7. FOOD PURCHASES
+      const purchases = sorted.filter((e) => e.type === 'purchase');
+      if (purchases.length > 0) {
+        document.getElementById('dash-purchase-name').textContent = purchases[0].name;
+        document.getElementById('dash-purchase-type').textContent = [purchases[0].foodType, purchases[0].quantity].filter(Boolean).join(' • ');
+        document.getElementById('dash-purchase-date').textContent = 'Bought: ' + formatShortDate(purchases[0].datetime);
+      }
+
+      // 8. VET VISITS
+      const vets = sorted.filter((e) => e.type === 'vet');
+      if (vets.length > 0) {
+        document.getElementById('dash-vet-reason').textContent = vets[0].reason;
+        document.getElementById('dash-vet-notes').textContent = [vets[0].clinic, vets[0].notes].filter(Boolean).join(' • ') || 'Checkup logged';
+        document.getElementById('dash-vet-date').textContent = formatShortDate(vets[0].datetime);
+      }
+
+      // 9. GENERIC EVENTS
+      const events = sorted.filter((e) => e.type === 'event');
+      if (events.length > 0) {
+        document.getElementById('dash-event-title').textContent = events[0].title;
+        document.getElementById('dash-event-desc').textContent = events[0].description || 'Event recorded';
+        document.getElementById('dash-event-date').textContent = formatShortDate(events[0].datetime);
+      }
+    }
+
+    // ==================== TRENDS & CHARTS ====================
+    function setTrendRange(days) {
+      currentTrendDays = days;
+      [7, 30, 90, 3650].forEach((d) => {
+        const btn = document.getElementById(`range-${d}`);
+        if (d === days) {
+          btn.className = 'trend-range-btn px-3 py-1.5 rounded-lg bg-pastel-sage text-white';
+        } else {
+          btn.className = 'trend-range-btn px-3 py-1.5 rounded-lg text-stone-600 dark:text-stone-300';
+        }
+      });
+      renderTrendCharts();
+    }
+
+    function renderTrendCharts() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+      const tickColor = isDark ? '#A8A29E' : '#78716C';
+      const cutoff = Date.now() - currentTrendDays * 86400000;
+
+      const inRange = state.entries
+        .filter((e) => new Date(e.datetime).getTime() >= cutoff)
+        .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+
+      // Destroy old instances
+      Object.values(charts).forEach((c) => c && c.destroy());
+
+      // 1. Weight Chart
+      const weightEntries = inRange.filter((e) => e.type === 'weight');
+      charts.weight = new Chart(document.getElementById('chart-weight'), {
+        type: 'line',
+        data: {
+          labels: weightEntries.map((e) => formatShortDate(e.datetime)),
+          datasets: [{
+            label: 'Weight (kg)',
+            data: weightEntries.map((e) => e.weightKg),
+            borderColor: '#7A9E89',
+            backgroundColor: 'rgba(122, 158, 137, 0.18)',
+            borderWidth: 2.5,
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4
+          }]
+        },
+        options: baseChartOptions(gridColor, tickColor)
+      });
+
+      // 2. Daily Food Intake Chart (aggregated by day)
+      const foodByDay = {};
+      inRange.filter((e) => e.type === 'food').forEach((e) => {
+        const day = e.datetime.slice(0, 10);
+        foodByDay[day] = (foodByDay[day] || 0) + (Number(e.gramsEaten) || 0);
+      });
+      const foodDays = Object.keys(foodByDay).sort();
+      charts.food = new Chart(document.getElementById('chart-food'), {
+        type: 'bar',
+        data: {
+          labels: foodDays.map((d) => formatShortDate(d)),
+          datasets: [{
+            label: 'Grams Eaten',
+            data: foodDays.map((d) => foodByDay[d]),
+            backgroundColor: '#D98A6C',
+            borderRadius: 8
+          }]
+        },
+        options: baseChartOptions(gridColor, tickColor)
+      });
+
+      // 3. Pukes by Reason (Stacked Bar by Day)
+      const pukeDaysMap = {};
+      inRange.filter((e) => e.type === 'puke').forEach((e) => {
+        const day = e.datetime.slice(0, 10);
+        if (!pukeDaysMap[day]) pukeDaysMap[day] = { Hairball: 0, Food: 0, Other: 0 };
+        const r = pukeDaysMap[day][e.reason] !== undefined ? e.reason : 'Other';
+        pukeDaysMap[day][r]++;
+      });
+      const pDays = Object.keys(pukeDaysMap).sort();
+      charts.puke = new Chart(document.getElementById('chart-puke'), {
+        type: 'bar',
+        data: {
+          labels: pDays.map((d) => formatShortDate(d)),
+          datasets: [
+            { label: 'Hairball', data: pDays.map((d) => pukeDaysMap[d].Hairball), backgroundColor: '#F43F5E', borderRadius: 6 },
+            { label: 'Food', data: pDays.map((d) => pukeDaysMap[d].Food), backgroundColor: '#F59E0B', borderRadius: 6 },
+            { label: 'Other', data: pDays.map((d) => pukeDaysMap[d].Other), backgroundColor: '#8B5CF6', borderRadius: 6 }
+          ]
+        },
+        options: {
+          ...baseChartOptions(gridColor, tickColor),
+          plugins: { legend: { display: true, labels: { color: tickColor, boxWidth: 12 } } },
+          scales: {
+            x: { stacked: true, grid: { display: false }, ticks: { color: tickColor } },
+            y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, color: tickColor }, grid: { color: gridColor } }
+          }
+        }
+      });
+
+      // 4. Care Activity (Litter & Water per day)
+      const careDaysMap = {};
+      inRange.filter((e) => e.type === 'litter' || e.type === 'water').forEach((e) => {
+        const day = e.datetime.slice(0, 10);
+        if (!careDaysMap[day]) careDaysMap[day] = { litter: 0, water: 0 };
+        careDaysMap[day][e.type]++;
+      });
+      const cDays = Object.keys(careDaysMap).sort();
+      charts.care = new Chart(document.getElementById('chart-care'), {
+        type: 'bar',
+        data: {
+          labels: cDays.map((d) => formatShortDate(d)),
+          datasets: [
+            { label: 'Litter Logs', data: cDays.map((d) => careDaysMap[d].litter), backgroundColor: '#D97706', borderRadius: 6 },
+            { label: 'Water Logs', data: cDays.map((d) => careDaysMap[d].water), backgroundColor: '#6B8CAE', borderRadius: 6 }
+          ]
+        },
+        options: {
+          ...baseChartOptions(gridColor, tickColor),
+          plugins: { legend: { display: true, labels: { color: tickColor, boxWidth: 12 } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: tickColor } },
+            y: { beginAtZero: true, ticks: { stepSize: 1, color: tickColor }, grid: { color: gridColor } }
+          }
+        }
+      });
+    }
+
+    function baseChartOptions(gridColor, tickColor) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } } },
+          y: { beginAtZero: false, grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } }
+        }
+      };
+    }
+
+    // ==================== HISTORY LIST (VIEWABLE & EDITABLE) ====================
+    function renderHistoryList() {
+      const container = document.getElementById('history-list-container');
+      const catFilter = document.getElementById('history-category-filter').value;
+      const query = document.getElementById('history-search').value.trim().toLowerCase();
+
+      const filtered = state.entries
+        .filter((e) => catFilter === 'all' || e.type === catFilter)
+        .filter((e) => !query || JSON.stringify(e).toLowerCase().includes(query))
+        .sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center py-10 text-xs text-stone-400">No matching entries found.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map((e) => {
+        const meta = describeEntry(e);
+        return `
+          <div class="p-3.5 rounded-2xl bg-pastel-cream/80 dark:bg-pastel-darkElevated/70 border border-stone-200/70 dark:border-stone-700/70 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-xl ${meta.badgeClass} flex items-center justify-center shrink-0">
+                <i class="${meta.icon}"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="font-bold text-xs sm:text-sm truncate">${escapeHtml(meta.title)}</div>
+                <div class="text-[11px] sm:text-xs text-stone-500 dark:text-stone-400 truncate">${escapeHtml(meta.subtitle)}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="text-[11px] text-stone-400 mr-1 hidden sm:inline">${formatDateTime(e.datetime)}</span>
+              <button type="button" onclick="editEntryById('${e.id}')" class="p-2 rounded-xl bg-white dark:bg-pastel-darkCard border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:text-pastel-sage" title="Edit entry">
+                <i class="fa-solid fa-pen text-xs"></i>
+              </button>
+              <button type="button" onclick="deleteEntry('${e.id}')" class="p-2 rounded-xl bg-white dark:bg-pastel-darkCard border border-stone-200 dark:border-stone-700 text-rose-500 hover:bg-rose-500 hover:text-white" title="Delete entry">
+                <i class="fa-solid fa-trash text-xs"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function editEntryById(id) {
+      const entry = state.entries.find((e) => e.id === id);
+      if (entry) openLogModal(entry.type, entry);
+    }
+
+    function describeEntry(e) {
+      switch (e.type) {
+        case 'weight':
+          return {
+            icon: 'fa-solid fa-weight-scale',
+            badgeClass: 'bg-pastel-sageSoft text-pastel-sage',
+            title: `Weight: ${e.weightKg} kg`,
+            subtitle: `${formatDateTime(e.datetime)}${e.notes ? ' • ' + e.notes : ''}`
+          };
+        case 'food':
+          return {
+            icon: 'fa-solid fa-bowl-food',
+            badgeClass: 'bg-pastel-peachSoft text-pastel-peach',
+            title: `Food Intake: ${e.gramsEaten}g eaten`,
+            subtitle: `${formatDateTime(e.datetime)}${e.foodType ? ' • ' + e.foodType : ''}`
+          };
+        case 'puke':
+          return {
+            icon: 'fa-solid fa-notes-medical',
+            badgeClass: 'bg-rose-100 text-rose-500',
+            title: `Puke (${e.reason})`,
+            subtitle: `${formatDateTime(e.datetime)}${e.notes ? ' • ' + e.notes : ''}`
+          };
+        case 'litter':
+          return {
+            icon: 'fa-solid fa-box-open',
+            badgeClass: 'bg-amber-100 text-amber-700',
+            title: `Litter: ${e.cleanType} by ${e.cleaner}`,
+            subtitle: `${formatDateTime(e.datetime)} • Stool: ${e.stool}${e.comments ? ' • ' + e.comments : ''}`
+          };
+        case 'water': {
+          const actions = [
+            e.refillDone ? 'Refilled' : '',
+            e.cleaned ? 'Cleaned' : '',
+            e.filterChanged ? 'Filter Changed' : ''
+          ].filter(Boolean).join(', ');
+          return {
+            icon: 'fa-solid fa-droplet',
+            badgeClass: 'bg-pastel-slateSoft text-pastel-slate',
+            title: `Water: ${e.level}${actions ? ' (' + actions + ')' : ''}`,
+            subtitle: `${formatDateTime(e.datetime)}${e.notes ? ' • ' + e.notes : ''}`
+          };
+        }
+        case 'vaccine':
+          return {
+            icon: 'fa-solid fa-syringe',
+            badgeClass: 'bg-emerald-100 text-emerald-600',
+            title: `Vaccine/Preventative: ${e.name}`,
+            subtitle: `${formatShortDate(e.datetime)}${e.dueDate ? ' • Next due: ' + e.dueDate : ''}`
+          };
+        case 'purchase':
+          return {
+            icon: 'fa-solid fa-bag-shopping',
+            badgeClass: 'bg-purple-100 text-purple-600',
+            title: `Bought: ${e.name}`,
+            subtitle: `${formatShortDate(e.datetime)} • ${e.foodType}${e.quantity ? ' (' + e.quantity + ')' : ''}`
+          };
+        case 'vet':
+          return {
+            icon: 'fa-solid fa-stethoscope',
+            badgeClass: 'bg-teal-100 text-teal-600',
+            title: `Vet Visit: ${e.reason}`,
+            subtitle: `${formatShortDate(e.datetime)}${e.clinic ? ' • ' + e.clinic : ''}${e.notes ? ' • ' + e.notes : ''}`
+          };
+        default:
+          return {
+            icon: 'fa-solid fa-calendar-check',
+            badgeClass: 'bg-indigo-100 text-indigo-600',
+            title: e.title || 'Event',
+            subtitle: `${formatDateTime(e.datetime)}${e.description ? ' • ' + e.description : ''}`
+          };
+      }
+    }
+
+    // ==================== DATA HANDLING & PARTNER SMART MERGE ====================
+    function buildCleanExportObject() {
+      // Strictly exclude any image/base64 strings; keep only lightweight photoMeta reference
+      const cleanPet = {
+        name: state.pet.name,
+        microchip: state.pet.microchip,
+        dob: state.pet.dob,
+        breed: state.pet.breed,
+        color: state.pet.color,
+        sex: state.pet.sex,
+        insurance: state.pet.insurance,
+        license: state.pet.license,
+        vetClinic: state.pet.vetClinic,
+        vetPhone: state.pet.vetPhone,
+        photoMeta: state.pet.photoMeta || null
+      };
+      return {
+        format: 'cat-care-tracker-json',
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        pet: cleanPet,
+        settings: state.settings,
+        entries: state.entries
+      };
+    }
+
+    function openDataModal() {
+      const jsonStr = JSON.stringify(buildCleanExportObject(), null, 2);
+      document.getElementById('export-json-box').value = jsonStr;
+      document.getElementById('import-json-box').value = '';
+      document.getElementById('merge-preview-box').classList.add('hidden');
+      openModal('data-modal');
+    }
+
+    function downloadJsonFile() {
+      const jsonStr = JSON.stringify(buildCleanExportObject(), null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const safeName = (state.pet.name || 'cat').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      a.href = url;
+      a.download = `${safeName}_care_logs_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('JSON file downloaded');
+    }
+
+    function copyJsonText() {
+      const box = document.getElementById('export-json-box');
+      box.value = JSON.stringify(buildCleanExportObject());
+      box.select();
+      box.setSelectionRange(0, 999999);
+      document.execCommand('copy');
+      showToast('JSON copied to clipboard');
+    }
+
+    function loadJsonFileToBox(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        document.getElementById('import-json-box').value = e.target.result;
+        previewPartnerMerge();
+      };
+      reader.readAsText(file);
+    }
+
+    // Build deterministic fingerprint for duplicate detection across partner phones
+    function getEntryFingerprint(entry) {
+      const core = { ...entry };
+      delete core.id;
+      return `${entry.type}|${entry.datetime}|${JSON.stringify(core)}`;
+    }
+
+    function analyzeIncomingJson(rawText) {
+      const parsed = JSON.parse(rawText);
+      const incomingEntries = Array.isArray(parsed) ? parsed : parsed.entries;
+      if (!Array.isArray(incomingEntries)) {
+        throw new Error('Could not find an entries list in this JSON.');
+      }
+
+      const existingIds = new Set(state.entries.map((e) => e.id));
+      const existingFingerprints = new Set(state.entries.map(getEntryFingerprint));
+
+      const missingEntries = [];
+      let duplicateCount = 0;
+
+      incomingEntries.forEach((item) => {
+        if (!item || !item.type || !item.datetime) return;
+        const fp = getEntryFingerprint(item);
+        if ((item.id && existingIds.has(item.id)) || existingFingerprints.has(fp)) {
+          duplicateCount++;
+        } else {
+          missingEntries.push(item);
+          existingFingerprints.add(fp);
+          if (item.id) existingIds.add(item.id);
+        }
+      });
+
+      return { parsed, missingEntries, duplicateCount, totalIncoming: incomingEntries.length };
+    }
+
+    function previewPartnerMerge() {
+      const raw = document.getElementById('import-json-box').value.trim();
+      const box = document.getElementById('merge-preview-box');
+      const txt = document.getElementById('merge-preview-text');
+      if (!raw) {
+        box.classList.add('hidden');
+        return;
+      }
+      try {
+        const res = analyzeIncomingJson(raw);
+        box.classList.remove('hidden');
+        txt.textContent = `Found ${res.totalIncoming} entries: ${res.missingEntries.length} new to add, ${res.duplicateCount} duplicates will be skipped.`;
+      } catch (err) {
+        box.classList.remove('hidden');
+        txt.textContent = 'Invalid JSON format: ' + err.message;
+      }
+    }
+
+    function executeSmartMerge() {
+      const raw = document.getElementById('import-json-box').value.trim();
+      if (!raw) return showToast('Paste JSON text or load a file first', true);
+
+      try {
+        const { parsed, missingEntries, duplicateCount } = analyzeIncomingJson(raw);
+
+        missingEntries.forEach((entry) => {
+          state.entries.push({
+            ...entry,
+            id: entry.id || 'merged_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)
+          });
+        });
+
+        // Fill in any blank pet passport fields from partner's profile without overwriting existing ones
+        if (parsed && parsed.pet) {
+          Object.keys(state.pet).forEach((k) => {
+            if (k !== 'photoMeta' && !state.pet[k] && parsed.pet[k]) {
+              state.pet[k] = parsed.pet[k];
+            }
+          });
+        }
+
+        state.entries.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+        saveState();
+        renderAll();
+        closeModal('data-modal');
+        showToast(`Merged ${missingEntries.length} new entries (${duplicateCount} duplicates skipped)`);
+      } catch (err) {
+        showToast('Merge failed: ' + err.message, true);
+      }
+    }
+
+    function executeOverwriteImport() {
+      const raw = document.getElementById('import-json-box').value.trim();
+      if (!raw) return showToast('Paste JSON text or load a file first', true);
+
+      try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed.entries)) {
+          throw new Error('Invalid backup structure.');
+        }
+        if (parsed.pet) {
+          const cleanPet = { ...state.pet, ...parsed.pet };
+          delete cleanPet.avatar;
+          delete cleanPet.photo;
+          delete cleanPet.image;
+          state.pet = cleanPet;
+        }
+        if (parsed.settings) state.settings = { ...state.settings, ...parsed.settings };
+        state.entries = parsed.entries;
+        saveState();
+        renderAll();
+        closeModal('data-modal');
+        showToast(`Imported ${state.entries.length} entries`);
+      } catch (err) {
+        showToast('Import failed: ' + err.message, true);
+      }
+    }
+
+    // ==================== HELPERS & MODALS ====================
+    function openModal(id) {
+      const el = document.getElementById(id);
+      el.classList.remove('hidden');
+      el.classList.add('flex');
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      el.classList.add('hidden');
+      el.classList.remove('flex');
+    }
+
+    function openInstallModal() {
+      openModal('install-modal');
+    }
+
+    function triggerNativeInstall() {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice.then(() => {
+        deferredInstallPrompt = null;
+        closeModal('install-modal');
+      });
+    }
+
+    function copyTextValue(elementId, successMsg) {
+      const text = document.getElementById(elementId).textContent;
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      temp.remove();
+      showToast(successMsg);
+    }
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toast-icon');
+      document.getElementById('toast-msg').textContent = msg;
+      icon.className = isError
+        ? 'fa-solid fa-circle-exclamation text-rose-400'
+        : 'fa-solid fa-circle-check text-pastel-sage';
+      toast.classList.remove('-translate-y-28', 'opacity-0');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        toast.classList.add('-translate-y-28', 'opacity-0');
+      }, 3000);
+    }
+
+    function escapeHtml(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>

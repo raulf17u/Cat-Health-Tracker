@@ -1,0 +1,2373 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Cat Care & Health Tracker</title>
+
+  <!-- Progressive Web App (PWA) Standalone Meta Tags -->
+  <meta name="application-name" content="Cat Care" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Cat Care" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#F6FAF8" id="metaThemeColor" />
+  <link id="dynamicManifest" rel="manifest" href="" />
+  <link id="appleTouchIcon" rel="apple-touch-icon" href="" />
+
+  <!-- Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            pastel: {
+              bg: 'var(--bg-main)',
+              card: '#FFFFFF',
+              sage: 'var(--accent-main)',
+              sageInk: 'var(--accent-ink)',
+              sageLight: 'var(--accent-soft)',
+              slate: '#9EB8D0',
+              slateLight: '#EDF4FA',
+              peach: '#E8B4A2',
+              peachLight: '#FDF2EE',
+              oat: '#D8C5B0',
+              oatLight: '#F7F3EE',
+              ink: '#374151',
+              muted: '#6B7280'
+            },
+            night: {
+              bg: '#16181A',
+              card: '#212428',
+              border: '#2F343A',
+              ink: '#F1F3F5',
+              muted: '#9AA5B1'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Chart.js for Interactive Trend Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+
+  <style>
+    :root {
+      /* Default: Soft Mint Pastel */
+      --bg-main: #F6FAF8;
+      --accent-main: #86C5AC;
+      --accent-ink: #2C5E4B;
+      --accent-soft: #E5F5EE;
+      --accent-rgb: 134, 197, 172;
+    }
+    [data-pastel="sky"] {
+      --bg-main: #F5F9FC;
+      --accent-main: #8BBCE0;
+      --accent-ink: #2B5475;
+      --accent-soft: #E4F1FA;
+      --accent-rgb: 139, 188, 224;
+    }
+    [data-pastel="lavender"] {
+      --bg-main: #F8F6FC;
+      --accent-main: #B2A1DB;
+      --accent-ink: #47396E;
+      --accent-soft: #EEEAF9;
+      --accent-rgb: 178, 161, 219;
+    }
+    [data-pastel="peach"] {
+      --bg-main: #FCF7F5;
+      --accent-main: #E6A891;
+      --accent-ink: #6E3D2B;
+      --accent-soft: #FBECE6;
+      --accent-rgb: 230, 168, 145;
+    }
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(var(--accent-rgb), 0.45);
+      border-radius: 9999px;
+    }
+    .glass-header {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-fade-up {
+      animation: fadeSlideUp 0.22s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="bg-pastel-bg text-pastel-ink dark:bg-night-bg dark:text-night-ink min-h-screen pb-24">
+
+  <!-- Toast Notification Banner (Replaces alert) -->
+  <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 w-[92%] max-w-md pointer-events-none"></div>
+
+  <!-- Top Sticky Header -->
+  <header class="sticky top-0 z-40 glass-header bg-pastel-bg/90 dark:bg-night-bg/90 border-b border-black/5 dark:border-white/10">
+    <div class="max-w-4xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Left: Circular Cat Avatar Frame + Prominent Editable Cat Name Title -->
+      <div class="flex items-center gap-3.5 min-w-0 flex-1">
+        <div class="relative shrink-0">
+          <button type="button" id="avatarUploadBtn" title="Upload or change cat photo"
+            class="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-[3px] border-pastel-sage dark:border-pastel-sage/80 bg-pastel-sageLight dark:bg-night-card flex items-center justify-center shadow-sm transition transform active:scale-95 focus:outline-none">
+            <img id="catAvatarImg" src="" alt="Cat photo" class="w-full h-full object-cover hidden" />
+            <div id="catAvatarPlaceholder" class="flex flex-col items-center justify-center text-pastel-sageInk dark:text-pastel-sage">
+              <i data-lucide="camera" class="w-6 h-6"></i>
+              <span class="text-[10px] font-semibold mt-0.5">Add Photo</span>
+            </div>
+          </button>
+          <button type="button" id="avatarPencilBtn" aria-label="Change photo"
+            class="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-pastel-sage text-pastel-sageInk dark:text-night-bg flex items-center justify-center shadow-md border-2 border-pastel-bg dark:border-night-bg active:scale-90 transition">
+            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+          </button>
+          <input type="file" id="avatarInput" accept="image/*" class="hidden" />
+        </div>
+
+        <!-- Editable Cat Name Title & Quick Subtitle -->
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5">
+            <input id="catNameInput" type="text" maxlength="32" placeholder="Enter Cat's Name..."
+              aria-label="Cat Name"
+              class="w-full bg-transparent text-xl sm:text-2xl font-extrabold tracking-tight text-pastel-ink dark:text-night-ink placeholder:text-pastel-muted/60 dark:placeholder:text-night-muted/50 focus:outline-none focus:bg-white/70 dark:focus:bg-white/5 focus:px-2.5 focus:py-1 rounded-xl transition truncate" />
+          </div>
+          <p id="headerSubtitle" class="text-xs text-pastel-muted dark:text-night-muted truncate mt-0.5">
+            Tap name to edit • Tap photo to upload
+          </p>
+        </div>
+      </div>
+
+      <!-- Right: Pastel Swatches + Action Buttons -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
+        <!-- 4 Soft Pastel Accent Swatches -->
+        <div class="flex items-center gap-1.5 px-2.5 py-2 rounded-2xl bg-white/90 dark:bg-night-card border border-black/5 dark:border-white/10 shadow-sm" title="Pastel Theme Color">
+          <button type="button" data-swatch="mint" aria-label="Soft Mint" title="Soft Mint"
+            class="pastel-swatch w-4 h-4 rounded-full bg-[#86C5AC] transition transform hover:scale-110 focus:outline-none"></button>
+          <button type="button" data-swatch="sky" aria-label="Pastel Sky" title="Pastel Sky"
+            class="pastel-swatch w-4 h-4 rounded-full bg-[#8BBCE0] transition transform hover:scale-110 focus:outline-none"></button>
+          <button type="button" data-swatch="lavender" aria-label="Soft Lavender" title="Soft Lavender"
+            class="pastel-swatch w-4 h-4 rounded-full bg-[#B2A1DB] transition transform hover:scale-110 focus:outline-none"></button>
+          <button type="button" data-swatch="peach" aria-label="Airy Peach" title="Airy Peach"
+            class="pastel-swatch w-4 h-4 rounded-full bg-[#E6A891] transition transform hover:scale-110 focus:outline-none"></button>
+        </div>
+
+        <!-- Pet ID & Details Quick Toggle Button -->
+        <button type="button" id="headerPassportBtn" title="Pet ID & Details"
+          class="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-semibold bg-white dark:bg-night-card border border-black/5 dark:border-white/10 text-pastel-ink dark:text-night-ink hover:bg-pastel-sageLight dark:hover:bg-white/5 active:scale-95 transition shadow-sm">
+          <i data-lucide="id-card" class="w-4 h-4 text-pastel-sageInk dark:text-pastel-sage"></i>
+          <span class="hidden md:inline">Pet ID</span>
+        </button>
+
+        <!-- Native PWA Install Button -->
+        <button id="installAppBtn" type="button"
+          class="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-semibold bg-pastel-sage text-pastel-sageInk dark:text-night-bg shadow-sm hover:opacity-95 active:scale-95 transition">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Install App</span>
+          <span class="sm:hidden">Install</span>
+        </button>
+
+        <!-- Data & Sync Modal Button -->
+        <button type="button" id="headerSyncBtn" title="Data Backup & Partner Smart Merge"
+          class="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-semibold bg-white dark:bg-night-card border border-black/5 dark:border-white/10 text-pastel-ink dark:text-night-ink hover:bg-pastel-sageLight dark:hover:bg-white/5 active:scale-95 transition shadow-sm">
+          <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+          <span class="hidden md:inline">Data & Sync</span>
+        </button>
+
+        <!-- Single Clean Light/Dark Mode Toggle -->
+        <button id="themeToggleBtn" type="button" title="Toggle Dark Mode"
+          class="p-2.5 rounded-2xl bg-white dark:bg-night-card border border-black/5 dark:border-white/10 text-pastel-ink dark:text-night-ink hover:bg-pastel-sageLight dark:hover:bg-white/5 active:scale-95 transition shadow-sm">
+          <i id="themeIconSun" data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-300"></i>
+          <i id="themeIconMoon" data-lucide="moon" class="w-4 h-4 block dark:hidden text-pastel-slate"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-4xl mx-auto px-4 pt-4 space-y-5">
+
+    <!-- Expandable Pet ID & Health Passport Drawer -->
+    <section id="passportSection" class="bg-white dark:bg-night-card rounded-3xl border border-black/5 dark:border-white/10 shadow-sm overflow-hidden">
+      <button type="button" id="passportToggleBtn"
+        class="w-full px-5 py-3.5 flex items-center justify-between text-left hover:bg-black/[0.015] dark:hover:bg-white/[0.02] transition">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-9 h-9 rounded-2xl bg-pastel-sageLight dark:bg-pastel-sage/20 text-pastel-sageInk dark:text-pastel-sage flex items-center justify-center shrink-0">
+            <i data-lucide="id-card" class="w-4 h-4"></i>
+          </div>
+          <div class="min-w-0">
+            <h2 class="text-sm font-bold tracking-tight">Pet ID & Personal Details</h2>
+            <p id="passportSummaryLine" class="text-xs text-pastel-muted dark:text-night-muted truncate">
+              Empty — tap to add Microchip, Date of Birth, Insurance & Vet Contact
+            </p>
+          </div>
+        </div>
+        <i id="passportChevron" data-lucide="chevron-down" class="w-4 h-4 text-pastel-muted transition-transform duration-200 shrink-0"></i>
+      </button>
+
+      <div id="passportDrawerBody" class="hidden px-5 pb-5 pt-3 border-t border-black/5 dark:border-white/10 space-y-4 animate-fade-up">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          <!-- Microchip with One-Tap Copy -->
+          <div class="sm:col-span-2 lg:col-span-1">
+            <label for="petMicrochip" class="block text-[11px] font-semibold uppercase tracking-wider text-pastel-muted dark:text-night-muted mb-1">
+              Microchip Number
+            </label>
+            <div class="flex items-center gap-1.5">
+              <input id="petMicrochip" type="text" placeholder="e.g. 985112000000000"
+                class="w-full px-3 py-2 rounded-xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage" />
+              <button type="button" id="copyMicrochipBtn" title="Copy Microchip Number"
+                class="p-2.5 rounded-xl bg-pastel-sageLight dark:bg-white/10 text-pastel-sageInk dark:text-pastel-sage hover:opacity-80 active:scale-95 transition shrink-0">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Date of Birth + Auto Age -->
+          <div>
+            <label for="petDob" class="block text-[11px] font-semibold uppercase tracking-wider text-pastel-muted dark:text-night-muted mb-1">
+              Date of Birth <span id="petAgeBadge" class="ml-1 text-pastel-sageInk dark:text-pastel-sage font-bold"></span>
+            </label>
+            <input id="petDob" type="date"
+              class="w-full px-3 py-2 rounded-xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage" />
+          </div>
+
+          <!-- Breed / Color / Sex -->
+          <div>
+            <label for="petBreedSex" class="block text-[11px] font-semibold uppercase tracking-wider text-pastel-muted dark:text-night-muted mb-1">
+              Breed / Color / Sex
+            </label>
+            <input id="petBreedSex" type="text" placeholder="e.g. Tabby • Spayed Female"
+              class="w-full px-3 py-2 rounded-xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage" />
+          </div>
+
+          <!-- Insurance Policy -->
+          <div>
+            <label for="petInsurance" class="block text-[11px] font-semibold uppercase tracking-wider text-pastel-muted dark:text-night-muted mb-1">
+              Insurance Provider & Policy #
+            </label>
+            <input id="petInsurance" type="text" placeholder="Provider & Policy ID"
+              class="w-full px-3 py-2 rounded-xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage" />
+          </div>
+
+          <!-- Registration / Tag -->
+          <div>
+            <label for="petLicense" class="block text-[11px] font-semibold uppercase tracking-wider text-pastel-muted dark:text-night-muted mb-1">
+              Registration / Council Tag #
+            </label>
+            <input id="petLicense" type="text" placeholder="Tag or License #"
+              class="w-full px-3 py-2 rounded-xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage" />
+          </div>
+
+          <!-- Primary Vet & Emergency Phone -->
+          <div>
+            <label for="petVetPhone" class="block text-[11px] font-semibold uppercase tracking-wider text-pastel-muted dark:text-night-muted mb-1">
+              Vet Clinic & Phone
+            </label>
+            <div class="flex items-center gap-1.5">
+              <input id="petVetPhone" type="text" placeholder="Clinic name & phone"
+                class="w-full px-3 py-2 rounded-xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage" />
+              <a id="callVetLink" href="#" title="Call Vet"
+                class="hidden p-2.5 rounded-xl bg-pastel-sageLight dark:bg-white/10 text-pastel-sageInk dark:text-pastel-sage hover:opacity-80 transition shrink-0">
+                <i data-lucide="phone" class="w-4 h-4"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-1">
+          <button type="button" id="savePassportBtn"
+            class="px-4 py-2 rounded-xl bg-pastel-sage text-pastel-sageInk dark:text-night-bg text-xs font-bold shadow-sm hover:opacity-95 active:scale-95 transition">
+            Save Pet Details
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Primary Action Bar + Navigation Tabs -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <!-- Segmented View Switcher -->
+      <div class="grid grid-cols-3 bg-white dark:bg-night-card p-1.5 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm">
+        <button type="button" data-tab="dashboard" id="tabBtn-dashboard"
+          class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-pastel-sage text-pastel-sageInk dark:text-night-bg shadow-sm">
+          Dashboard
+        </button>
+        <button type="button" data-tab="trends" id="tabBtn-trends"
+          class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-pastel-muted dark:text-night-muted hover:text-pastel-ink dark:hover:text-night-ink transition">
+          Trends
+        </button>
+        <button type="button" data-tab="history" id="tabBtn-history"
+          class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-pastel-muted dark:text-night-muted hover:text-pastel-ink dark:hover:text-night-ink transition">
+          History
+        </button>
+      </div>
+
+      <!-- Main Log Entry Button -->
+      <button type="button" id="openMainLogBtn"
+        class="w-full sm:w-auto px-5 py-3 rounded-2xl bg-pastel-sage text-pastel-sageInk dark:text-night-bg font-bold text-sm flex items-center justify-center gap-2 shadow-sm hover:opacity-95 active:scale-95 transition">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+        <span>Log Entry</span>
+      </button>
+    </div>
+
+    <!-- ==================== VIEW 1: DASHBOARD ==================== -->
+    <div id="view-dashboard" class="space-y-4 animate-fade-up">
+      
+      <!-- Vaccine & Preventative Alert Banner -->
+      <div id="vaccineAlertBanner" class="hidden bg-pastel-peachLight dark:bg-pastel-peach/15 border border-pastel-peach/40 rounded-3xl p-4 flex items-start justify-between gap-3">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-2xl bg-pastel-peach text-white flex items-center justify-center shrink-0 mt-0.5">
+            <i data-lucide="bell-ring" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-pastel-ink dark:text-night-ink">Upcoming / Overdue Care</h3>
+            <p id="vaccineAlertText" class="text-xs text-pastel-muted dark:text-night-muted mt-0.5"></p>
+          </div>
+        </div>
+        <button type="button" data-quicklog="vaccine"
+          class="quick-log-btn px-3 py-1.5 rounded-xl bg-pastel-peach text-white text-xs font-semibold shrink-0">
+          Update
+        </button>
+      </div>
+
+      <!-- 8-Card Care Grid covering every trackable variable -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <!-- 1. Weight Card -->
+        <div class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-2xl bg-pastel-sageLight dark:bg-pastel-sage/20 text-pastel-sageInk dark:text-pastel-sage flex items-center justify-center">
+                <i data-lucide="scale" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold">Weight</h3>
+                <p id="cardWeightSub" class="text-[11px] text-pastel-muted dark:text-night-muted">No weigh-ins yet</p>
+              </div>
+            </div>
+            <button type="button" data-quicklog="weight" title="Log Weight"
+              class="quick-log-btn w-9 h-9 rounded-2xl bg-pastel-bg dark:bg-night-bg hover:bg-pastel-sage hover:text-pastel-sageInk dark:hover:text-night-bg flex items-center justify-center transition active:scale-90">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="mt-4">
+            <div class="flex items-baseline gap-2">
+              <span id="cardWeightVal" class="text-2xl font-extrabold tracking-tight">—</span>
+              <span id="cardWeightDelta" class="text-xs font-semibold text-pastel-muted dark:text-night-muted"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Daily Food Intake Card -->
+        <div class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-2xl bg-pastel-oatLight dark:bg-pastel-oat/20 text-[#6D563E] dark:text-pastel-oat flex items-center justify-center">
+                <i data-lucide="utensils" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold">Daily Food Intake</h3>
+                <p id="cardFoodSub" class="text-[11px] text-pastel-muted dark:text-night-muted">Bowl before & after weigh-in</p>
+              </div>
+            </div>
+            <button type="button" data-quicklog="food" title="Log Food Bowl"
+              class="quick-log-btn w-9 h-9 rounded-2xl bg-pastel-bg dark:bg-night-bg hover:bg-pastel-oat hover:text-white flex items-center justify-center transition active:scale-90">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="mt-4">
+            <div class="flex items-baseline justify-between">
+              <span id="cardFoodToday" class="text-2xl font-extrabold tracking-tight">0 g</span>
+              <span id="cardFoodAvg" class="text-xs text-pastel-muted dark:text-night-muted">Today</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Puke Tracker Card (With Week / Month / Since Specific Date Selector) -->
+        <div class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-2xl bg-pastel-peachLight dark:bg-pastel-peach/20 text-[#7C4432] dark:text-pastel-peach flex items-center justify-center">
+                <i data-lucide="alert-circle" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold">Puke Tracker</h3>
+                <select id="pukeRangeSelect"
+                  class="mt-0.5 text-[11px] font-medium bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 rounded-lg px-1.5 py-0.5 focus:outline-none">
+                  <option value="week">Per Week (7d)</option>
+                  <option value="month">Per Month (30d)</option>
+                  <option value="since">Since Date...</option>
+                </select>
+              </div>
+            </div>
+            <button type="button" data-quicklog="puke" title="Log Puke"
+              class="quick-log-btn w-9 h-9 rounded-2xl bg-pastel-bg dark:bg-night-bg hover:bg-pastel-peach hover:text-white flex items-center justify-center transition active:scale-90 shrink-0">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div id="pukeSinceDateWrap" class="hidden mt-2">
+            <input type="date" id="pukeSinceDateInput"
+              class="w-full text-xs px-2.5 py-1.5 rounded-xl bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10" />
+          </div>
+
+          <div class="mt-4 flex items-baseline justify-between">
+            <span id="cardPukeCount" class="text-2xl font-extrabold tracking-tight">0</span>
+            <span id="cardPukeLast" class="text-xs text-pastel-muted dark:text-night-muted truncate max-w-[140px]">No episodes</span>
+          </div>
+        </div>
+
+        <!-- 4. Litter Box Card -->
+        <div class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-2xl bg-pastel-slateLight dark:bg-pastel-slate/20 text-[#39556E] dark:text-pastel-slate flex items-center justify-center">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold">Litter Box</h3>
+                <p id="cardLitterSub" class="text-[11px] text-pastel-muted dark:text-night-muted">No cleanings logged</p>
+              </div>
+            </div>
+            <button type="button" data-quicklog="litter" title="Log Litter Clean"
+              class="quick-log-btn w-9 h-9 rounded-2xl bg-pastel-bg dark:bg-night-bg hover:bg-pastel-slate hover:text-white flex items-center justify-center transition active:scale-90">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="mt-4">
+            <div id="cardLitterVal" class="text-base font-bold truncate">—</div>
+            <div id="cardLitterMeta" class="text-xs text-pastel-muted dark:text-night-muted mt-0.5 truncate">Tap + for normal or deep clean</div>
+          </div>
+        </div>
+
+        <!-- 5. Water & Fountain Card -->
+        <div class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-2xl bg-sky-100/80 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 flex items-center justify-center">
+                <i data-lucide="droplets" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold">Water & Fountain</h3>
+                <p id="cardWaterSub" class="text-[11px] text-pastel-muted dark:text-night-muted">No checks logged</p>
+              </div>
+            </div>
+            <button type="button" data-quicklog="water" title="Log Water & Fountain"
+              class="quick-log-btn w-9 h-9 rounded-2xl bg-pastel-bg dark:bg-night-bg hover:bg-sky-600 hover:text-white flex items-center justify-center transition active:scale-90">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="mt-4">
+            <div id="cardWaterVal" class="text-base font-bold truncate">—</div>
+            <div id="cardWaterMeta" class="text-xs text-pastel-muted dark:text-night-muted mt-0.5 truncate">Level, refill, wash & filter</div>
+          </div>
+        </div>
+
+        <!-- 6. Food Purchases Card -->
+        <div class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-2xl bg-teal-100/80 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 flex items-center justify-center">
+                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold">Food Purchases</h3>
+                <p id="cardPurchaseSub" class="text-[11px] text-pastel-muted dark:text-night-muted">No bags logged yet</p>
+              </div>
+            </div>
+            <button type="button" data-quicklog="purchase" title="Log Food Purchase"
+              class="quick-log-btn w-9 h-9 rounded-2xl bg-pastel-bg dark:bg-night-bg hover:bg-teal-600 hover:text-white flex items-center justify-center transition active:scale-90">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="mt-4">
+            <div id="cardPurchaseVal" class="text-base font-bold truncate">—</div>
+            <div id="cardPurchaseMeta" class="text-xs text-pastel-muted dark:text-night-muted mt-0.5 truncate">Track food types & bag dates</div>
+          </div>
+        </div>
+
+        <!-- 7. Vaccines & Preventatives Card -->
+        <div class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-2xl bg-purple-100/80 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 flex items-center justify-center">
+                <i data-lucide="syringe" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold">Vaccines & Meds</h3>
+                <p id="cardVaccineSub" class="text-[11px] text-pastel-muted dark:text-night-muted">No records yet</p>
+              </div>
+            </div>
+            <button type="button" data-quicklog="vaccine" title="Log Vaccine or Preventative"
+              class="quick-log-btn w-9 h-9 rounded-2xl bg-pastel-bg dark:bg-night-bg hover:bg-purple-600 hover:text-white flex items-center justify-center transition active:scale-90">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="mt-4">
+            <div id="cardVaccineVal" class="text-base font-bold truncate">—</div>
+            <div id="cardVaccineMeta" class="text-xs text-pastel-muted dark:text-night-muted mt-0.5 truncate">Track shots, flea/worming & due dates</div>
+          </div>
+        </div>
+
+        <!-- 8. Vet Visits & General Events Card -->
+        <div class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm flex flex-col justify-between sm:col-span-2 lg:col-span-2">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-2xl bg-rose-100/80 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 flex items-center justify-center">
+                <i data-lucide="stethoscope" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold">Vet Visits & General Events</h3>
+                <p id="cardVetSub" class="text-[11px] text-pastel-muted dark:text-night-muted">Checkups, grooming, behavior & milestones</p>
+              </div>
+            </div>
+            <div class="flex gap-1.5">
+              <button type="button" data-quicklog="vet" title="Log Vet Visit or Event"
+                class="quick-log-btn px-3 h-9 rounded-2xl bg-pastel-bg dark:bg-night-bg hover:bg-rose-600 hover:text-white text-xs font-semibold flex items-center gap-1 transition active:scale-95">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Vet / Event</span>
+              </button>
+            </div>
+          </div>
+          <div class="mt-4">
+            <div id="cardVetVal" class="text-base font-bold truncate">—</div>
+            <div id="cardVetMeta" class="text-xs text-pastel-muted dark:text-night-muted mt-0.5 truncate">Tap + to register a vet visit or general event</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Recent Activity Preview -->
+      <section class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold">Recent Activity</h3>
+          <button type="button" id="viewAllHistoryLink" class="text-xs font-semibold text-pastel-sageInk dark:text-pastel-sage hover:underline">
+            View All
+          </button>
+        </div>
+        <div id="recentActivityList" class="space-y-2.5"></div>
+      </section>
+    </div>
+
+    <!-- ==================== VIEW 2: TRENDS ==================== -->
+    <div id="view-trends" class="hidden space-y-4 animate-fade-up">
+      <!-- Timeframe Filter for Trends -->
+      <div class="bg-white dark:bg-night-card rounded-3xl p-4 border border-black/5 dark:border-white/10 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 class="text-sm font-bold">Trend Timeframe</h3>
+          <p class="text-xs text-pastel-muted dark:text-night-muted">Filter how variables evolve over time</p>
+        </div>
+        <select id="trendTimeframeSelect"
+          class="px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-semibold bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage">
+          <option value="14">Last 14 Days</option>
+          <option value="30" selected>Last 30 Days</option>
+          <option value="90">Last 90 Days</option>
+          <option value="all">All Time</option>
+        </select>
+      </div>
+
+      <div class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm">
+        <div class="mb-4">
+          <h3 class="text-base font-bold">Weight Trajectory</h3>
+          <p class="text-xs text-pastel-muted dark:text-night-muted">Recorded body weight over time</p>
+        </div>
+        <div class="relative h-64 w-full">
+          <canvas id="weightChartCanvas"></canvas>
+          <div id="weightChartEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+            <p class="text-sm font-medium text-pastel-muted dark:text-night-muted">No weight logs in this timeframe</p>
+            <button type="button" data-quicklog="weight" class="quick-log-btn mt-2 px-3.5 py-1.5 rounded-xl bg-pastel-sage text-pastel-sageInk text-xs font-bold">
+              Log Weight
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm">
+        <div class="mb-4">
+          <h3 class="text-base font-bold">Daily Food Consumption (g)</h3>
+          <p class="text-xs text-pastel-muted dark:text-night-muted">Total grams eaten per day</p>
+        </div>
+        <div class="relative h-64 w-full">
+          <canvas id="foodChartCanvas"></canvas>
+          <div id="foodChartEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+            <p class="text-sm font-medium text-pastel-muted dark:text-night-muted">No food intake logs in this timeframe</p>
+            <button type="button" data-quicklog="food" class="quick-log-btn mt-2 px-3.5 py-1.5 rounded-xl bg-pastel-oat text-white text-xs font-bold">
+              Log Bowl Weigh-In
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-night-card rounded-3xl p-5 border border-black/5 dark:border-white/10 shadow-sm">
+        <div class="mb-4">
+          <h3 class="text-base font-bold">Pukes by Reason</h3>
+          <p class="text-xs text-pastel-muted dark:text-night-muted">Breakdown of Hairball, Food, and Other episodes</p>
+        </div>
+        <div class="relative h-56 w-full">
+          <canvas id="pukeChartCanvas"></canvas>
+          <div id="pukeChartEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+            <p class="text-sm font-medium text-pastel-muted dark:text-night-muted">No puke episodes recorded in this timeframe</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 3: HISTORY ==================== -->
+    <div id="view-history" class="hidden space-y-4 animate-fade-up">
+      <div class="bg-white dark:bg-night-card rounded-3xl p-4 border border-black/5 dark:border-white/10 shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row gap-2.5">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-pastel-muted"></i>
+            <input id="historySearchInput" type="text" placeholder="Search notes, brands, reasons, cleaner..."
+              class="w-full pl-9 pr-3 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage" />
+          </div>
+          <select id="historyTypeFilter"
+            class="px-3.5 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage">
+            <option value="all">All Categories</option>
+            <option value="weight">Weight</option>
+            <option value="food">Daily Food Intake</option>
+            <option value="purchase">Food Purchases</option>
+            <option value="puke">Puke Tracker</option>
+            <option value="litter">Litter Box</option>
+            <option value="water">Water & Fountain</option>
+            <option value="vaccine">Vaccines & Meds</option>
+            <option value="vet">Vet Visits</option>
+            <option value="event">General Events</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="fullHistoryList" class="space-y-2.5"></div>
+    </div>
+
+  </main>
+
+  <!-- ==================== LOG ENTRY MODAL ==================== -->
+  <div id="logModal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-night-card w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-black/10 dark:border-white/10 shadow-2xl max-h-[92vh] flex flex-col overflow-hidden animate-fade-up">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between">
+        <h3 id="logModalTitle" class="text-base font-extrabold">New Care Entry</h3>
+        <button type="button" id="closeLogModalBtn" class="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Category Selector Pills -->
+      <div id="logCategoryPills" class="px-5 pt-3 pb-2 flex gap-1.5 overflow-x-auto border-b border-black/5 dark:border-white/10 shrink-0">
+        <button type="button" data-logtype="food" class="log-cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">Food Intake</button>
+        <button type="button" data-logtype="weight" class="log-cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">Weight</button>
+        <button type="button" data-logtype="puke" class="log-cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">Puke</button>
+        <button type="button" data-logtype="litter" class="log-cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">Litter Box</button>
+        <button type="button" data-logtype="water" class="log-cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">Water</button>
+        <button type="button" data-logtype="purchase" class="log-cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">Food Buy</button>
+        <button type="button" data-logtype="vaccine" class="log-cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">Vaccine</button>
+        <button type="button" data-logtype="vet" class="log-cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">Vet Visit</button>
+        <button type="button" data-logtype="event" class="log-cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">Event</button>
+      </div>
+
+      <!-- Dynamic Form Body -->
+      <form id="entryForm" class="p-5 overflow-y-auto space-y-4">
+        <input type="hidden" id="editingEntryId" value="" />
+        <input type="hidden" id="entryCategory" value="food" />
+
+        <!-- Shared Timestamp Field -->
+        <div>
+          <label for="entryTimestamp" class="block text-xs font-semibold text-pastel-muted dark:text-night-muted mb-1">Date & Time</label>
+          <input id="entryTimestamp" type="datetime-local" required
+            class="w-full px-3.5 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage" />
+        </div>
+
+        <!-- Dynamic Fields Container -->
+        <div id="dynamicFormFields" class="space-y-4"></div>
+
+        <!-- Shared Notes Field -->
+        <div>
+          <label for="entryNotes" class="block text-xs font-semibold text-pastel-muted dark:text-night-muted mb-1">Notes / Comments (Optional)</label>
+          <textarea id="entryNotes" rows="2" placeholder="Any extra details..."
+            class="w-full px-3.5 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage"></textarea>
+        </div>
+
+        <div class="pt-2 flex items-center gap-2.5">
+          <button type="button" id="deleteEntryBtn"
+            class="hidden px-4 py-3 rounded-2xl bg-red-500/10 text-red-600 dark:text-red-400 text-sm font-semibold hover:bg-red-500/20 transition">
+            Delete
+          </button>
+          <button type="submit"
+            class="flex-1 py-3 rounded-2xl bg-pastel-sage text-pastel-sageInk dark:text-night-bg font-bold text-sm shadow-sm hover:opacity-95 active:scale-98 transition">
+            Save Entry
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== SYNC & ZERO-BLOAT BACKUP MODAL ==================== -->
+  <div id="syncModal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-night-card w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-black/10 dark:border-white/10 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-up">
+      <div class="px-5 py-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-extrabold">Backup & Partner Smart Merge</h3>
+          <p class="text-xs text-pastel-muted dark:text-night-muted">Zero-bloat JSON (excludes photo data for compact sharing)</p>
+        </div>
+        <button type="button" id="closeSyncModalBtn" class="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-5">
+        <!-- Export Section -->
+        <div class="space-y-2.5">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-pastel-muted dark:text-night-muted">1. Export Data</h4>
+          <div class="grid grid-cols-2 gap-2.5">
+            <button type="button" id="exportJsonFileBtn"
+              class="py-3 px-4 rounded-2xl bg-pastel-sage text-pastel-sageInk dark:text-night-bg text-xs font-bold flex items-center justify-center gap-2 shadow-sm hover:opacity-95 transition">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>Download .JSON</span>
+            </button>
+            <button type="button" id="copyJsonTextBtn"
+              class="py-3 px-4 rounded-2xl bg-pastel-oatLight dark:bg-white/10 text-pastel-ink dark:text-night-ink text-xs font-bold flex items-center justify-center gap-2 hover:opacity-90 transition">
+              <i data-lucide="copy" class="w-4 h-4"></i>
+              <span>Copy Text</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Import / Smart Merge Section -->
+        <div class="space-y-2.5 pt-2 border-t border-black/5 dark:border-white/10">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-pastel-muted dark:text-night-muted">2. Partner Smart Merge or Restore</h4>
+          <p class="text-xs text-pastel-muted dark:text-night-muted">
+            <strong>Smart Merge</strong> checks every log entry from your partner's phone and adds only the missing entries without creating duplicates.
+          </p>
+
+          <div class="flex items-center gap-2">
+            <label class="flex-1 cursor-pointer py-2.5 px-4 rounded-2xl border border-dashed border-pastel-sage text-center text-xs font-semibold text-pastel-sageInk dark:text-pastel-sage hover:bg-pastel-sageLight/40 transition">
+              <span>Choose .JSON File to Load</span>
+              <input id="jsonFileUploadInput" type="file" accept=".json,application/json" class="hidden" />
+            </label>
+          </div>
+
+          <textarea id="importJsonTextarea" rows="4" placeholder="Or paste backup JSON text here..."
+            class="w-full p-3 rounded-2xl text-xs font-mono bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-pastel-sage"></textarea>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <button type="button" id="smartMergeBtn"
+              class="py-3 px-4 rounded-2xl bg-pastel-slate text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:opacity-95 transition">
+              <i data-lucide="git-merge" class="w-4 h-4"></i>
+              <span>Smart Merge</span>
+            </button>
+            <button type="button" id="fullReplaceBtn"
+              class="py-3 px-4 rounded-2xl bg-pastel-peach/20 text-[#7C4432] dark:text-pastel-peach text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-pastel-peach/30 transition">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              <span>Full Replace</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PWA INSTALL INSTRUCTIONS MODAL ==================== -->
+  <div id="installGuideModal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-night-card w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-black/10 dark:border-white/10 shadow-2xl p-6 space-y-4 animate-fade-up">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-pastel-sage text-pastel-sageInk flex items-center justify-center">
+            <i data-lucide="smartphone" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold">Install as Standalone App</h3>
+            <p class="text-xs text-pastel-muted dark:text-night-muted">Full-screen app experience</p>
+          </div>
+        </div>
+        <button type="button" id="closeInstallModalBtn" class="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="installGuideContent" class="text-xs text-pastel-ink dark:text-night-ink space-y-3 leading-relaxed"></div>
+
+      <button type="button" id="gotItInstallBtn"
+        class="w-full py-3 rounded-2xl bg-pastel-sage text-pastel-sageInk dark:text-night-bg text-xs font-bold">
+        Got It
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. TRUE PROGRESSIVE WEB APP (PWA) ENGINE
+    // =========================================================================
+    let deferredInstallPrompt = null;
+
+    function generatePngIconDataUrl(size) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      const radius = size * 0.22;
+      ctx.fillStyle = '#86C5AC';
+      ctx.beginPath();
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(size - radius, 0);
+      ctx.quadraticCurveTo(size, 0, size, radius);
+      ctx.lineTo(size, size - radius);
+      ctx.quadraticCurveTo(size, size, size - radius, size);
+      ctx.lineTo(radius, size);
+      ctx.quadraticCurveTo(0, size, 0, size - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#F6FAF8';
+      const cx = size / 2;
+      const cy = size * 0.56;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, size * 0.19, size * 0.15, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const toes = [
+        { x: cx - size * 0.19, y: cy - size * 0.14, r: size * 0.065, rot: -0.3 },
+        { x: cx - size * 0.07, y: cy - size * 0.22, r: size * 0.07, rot: -0.1 },
+        { x: cx + size * 0.07, y: cy - size * 0.22, r: size * 0.07, rot: 0.1 },
+        { x: cx + size * 0.19, y: cy - size * 0.14, r: size * 0.065, rot: 0.3 }
+      ];
+      toes.forEach(t => {
+        ctx.beginPath();
+        ctx.ellipse(t.x, t.y, t.r * 0.85, t.r * 1.15, t.rot, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      return canvas.toDataURL('image/png');
+    }
+
+    function setupTruePwa() {
+      try {
+        const icon192 = generatePngIconDataUrl(192);
+        const icon512 = generatePngIconDataUrl(512);
+
+        const appleIcon = document.getElementById('appleTouchIcon');
+        if (appleIcon) appleIcon.href = icon192;
+
+        const appUrl = window.location.href.split('#')[0];
+        const manifestObj = {
+          name: 'Cat Care & Health Tracker',
+          short_name: 'Cat Care',
+          description: 'Offline-first cat health, weight, food intake, and care tracker.',
+          start_url: appUrl,
+          scope: './',
+          display: 'standalone',
+          orientation: 'portrait-primary',
+          background_color: '#F6FAF8',
+          theme_color: '#86C5AC',
+          icons: [
+            { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+            { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+          ]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        const manifestEl = document.getElementById('dynamicManifest');
+        if (manifestEl) manifestEl.setAttribute('href', manifestUrl);
+
+        if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+          const swCode = `
+            self.addEventListener('install', (e) => self.skipWaiting());
+            self.addEventListener('activate', (e) => e.waitUntil(clients.claim()));
+            self.addEventListener('fetch', (e) => {
+              e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+            });
+          `;
+          const swBlob = new Blob([swCode], { type: 'application/javascript' });
+          const swUrl = URL.createObjectURL(swBlob);
+          navigator.serviceWorker.register(swUrl).catch(() => {});
+        }
+      } catch (err) {
+        console.warn('PWA setup notice:', err);
+      }
+
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const btn = document.getElementById('installAppBtn');
+      if (btn && isStandalone) {
+        btn.classList.add('hidden');
+      }
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const btn = document.getElementById('installAppBtn');
+      if (btn) btn.classList.remove('hidden');
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      const btn = document.getElementById('installAppBtn');
+      if (btn) btn.classList.add('hidden');
+      showToast('App installed! Launch it anytime from your home screen or app drawer.');
+    });
+
+    async function triggerPwaInstall() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const { outcome } = await deferredInstallPrompt.userChoice;
+        if (outcome === 'accepted') {
+          deferredInstallPrompt = null;
+        }
+        return;
+      }
+
+      const ua = navigator.userAgent || '';
+      const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isInIframe = window.self !== window.top;
+      const guideEl = document.getElementById('installGuideContent');
+
+      if (isInIframe) {
+        guideEl.innerHTML = `
+          <div class="p-3 rounded-2xl bg-pastel-oatLight dark:bg-white/5 space-y-1.5">
+            <p class="font-bold">Preview Frame Detected</p>
+            <p>Browsers block native app installation while inside an embedded preview frame.</p>
+            <p class="mt-1">To install as a real standalone app: open this page in its own browser tab (over HTTPS or localhost), then tap <strong>Install App</strong>.</p>
+          </div>
+        `;
+      } else if (isIOS) {
+        guideEl.innerHTML = `
+          <p>iOS Safari installs web apps in full-screen standalone mode via the Share menu:</p>
+          <ol class="list-decimal pl-5 space-y-1.5 font-medium">
+            <li>Tap the <strong>Share</strong> icon (<span class="inline-block px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">↑</span>) in Safari's toolbar.</li>
+            <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
+            <li>Tap <strong>Add</strong> — it will launch without Safari browser bars just like a native app.</li>
+          </ol>
+        `;
+      } else {
+        guideEl.innerHTML = `
+          <p>To install as a standalone app on Android or Desktop:</p>
+          <ol class="list-decimal pl-5 space-y-1.5 font-medium">
+            <li>Ensure the page is opened over <strong>HTTPS</strong> (or <code>localhost</code>) in Chrome, Edge, or Brave.</li>
+            <li>Open the browser menu (<strong>⋮</strong>) and tap <strong>Install app</strong>.</li>
+          </ol>
+        `;
+      }
+      openModal('installGuideModal');
+    }
+
+    // =========================================================================
+    // 2. STATE MANAGEMENT (STRICTLY EMPTY ON FIRST LAUNCH)
+    // =========================================================================
+    const STORAGE_KEY = 'cat_care_tracker_data_v1';
+    const AVATAR_KEY = 'cat_tracker_avatar_img';
+    const THEME_KEY = 'cat_care_theme_mode';
+    const ACCENT_KEY = 'cat_care_pastel_accent';
+
+    const PASTEL_THEMES = {
+      mint: { bg: '#F6FAF8', chart: '#86C5AC', fill: 'rgba(134, 197, 172, 0.22)' },
+      sky: { bg: '#F5F9FC', chart: '#8BBCE0', fill: 'rgba(139, 188, 224, 0.22)' },
+      lavender: { bg: '#F8F6FC', chart: '#B2A1DB', fill: 'rgba(178, 161, 219, 0.22)' },
+      peach: { bg: '#FCF7F5', chart: '#E6A891', fill: 'rgba(230, 168, 145, 0.22)' }
+    };
+
+    function getEmptyState() {
+      return {
+        profile: {
+          name: '',
+          microchip: '',
+          dob: '',
+          breedSex: '',
+          insurance: '',
+          license: '',
+          vetPhone: '',
+          avatarMeta: null
+        },
+        cleaners: ['Me', 'Wife'],
+        logs: []
+      };
+    }
+
+    let appState = loadState();
+    let weightChartInstance = null;
+    let foodChartInstance = null;
+    let pukeChartInstance = null;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return getEmptyState();
+        const parsed = JSON.parse(raw);
+        return {
+          ...getEmptyState(),
+          ...parsed,
+          profile: { ...getEmptyState().profile, ...(parsed.profile || {}) },
+          cleaners: Array.isArray(parsed.cleaners) && parsed.cleaners.length ? parsed.cleaners : ['Me', 'Wife'],
+          logs: Array.isArray(parsed.logs) ? parsed.logs : []
+        };
+      } catch (e) {
+        console.error('Failed to load state:', e);
+        return getEmptyState();
+      }
+    }
+
+    function persistState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {
+        showToast('Storage full! Consider downloading a JSON backup.', 'error');
+      }
+    }
+
+    // =========================================================================
+    // 3. THEME, PASTEL ACCENTS & HEADER / AVATAR MANAGEMENT
+    // =========================================================================
+    function initTheme() {
+      const savedAccent = localStorage.getItem(ACCENT_KEY) || 'mint';
+      setPastelAccent(savedAccent, false);
+
+      const saved = localStorage.getItem(THEME_KEY);
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = saved ? saved === 'dark' : prefersDark;
+      applyTheme(isDark);
+    }
+
+    function setPastelAccent(accentKey, shouldRedraw = true) {
+      const key = PASTEL_THEMES[accentKey] ? accentKey : 'mint';
+      document.documentElement.setAttribute('data-pastel', key);
+      localStorage.setItem(ACCENT_KEY, key);
+
+      document.querySelectorAll('.pastel-swatch').forEach(btn => {
+        if (btn.dataset.swatch === key) {
+          btn.classList.add('ring-2', 'ring-offset-1', 'ring-pastel-ink', 'dark:ring-white', 'scale-110');
+        } else {
+          btn.classList.remove('ring-2', 'ring-offset-1', 'ring-pastel-ink', 'dark:ring-white', 'scale-110');
+        }
+      });
+
+      const isDark = document.documentElement.classList.contains('dark');
+      const metaTheme = document.getElementById('metaThemeColor');
+      if (metaTheme) {
+        metaTheme.setAttribute('content', isDark ? '#16181A' : PASTEL_THEMES[key].bg);
+      }
+
+      if (shouldRedraw && !document.getElementById('view-trends').classList.contains('hidden')) {
+        renderTrends();
+      }
+    }
+
+    function toggleTheme() {
+      const isCurrentlyDark = document.documentElement.classList.contains('dark');
+      applyTheme(!isCurrentlyDark);
+    }
+
+    function applyTheme(isDark) {
+      const html = document.documentElement;
+      const metaTheme = document.getElementById('metaThemeColor');
+      const currentAccent = localStorage.getItem(ACCENT_KEY) || 'mint';
+      const lightBg = (PASTEL_THEMES[currentAccent] || PASTEL_THEMES.mint).bg;
+      if (isDark) {
+        html.classList.add('dark');
+        html.classList.remove('light');
+        localStorage.setItem(THEME_KEY, 'dark');
+        if (metaTheme) metaTheme.setAttribute('content', '#16181A');
+      } else {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        localStorage.setItem(THEME_KEY, 'light');
+        if (metaTheme) metaTheme.setAttribute('content', lightBg);
+      }
+      if (!document.getElementById('view-trends').classList.contains('hidden')) {
+        renderTrends();
+      }
+    }
+
+    function loadAvatar() {
+      try {
+        const imgData = localStorage.getItem(AVATAR_KEY);
+        const imgEl = document.getElementById('catAvatarImg');
+        const placeholderEl = document.getElementById('catAvatarPlaceholder');
+        if (imgData) {
+          imgEl.src = imgData;
+          imgEl.classList.remove('hidden');
+          placeholderEl.classList.add('hidden');
+        } else {
+          imgEl.classList.add('hidden');
+          placeholderEl.classList.remove('hidden');
+        }
+      } catch (e) {}
+    }
+
+    function handleAvatarUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const maxDim = 320;
+          let w = img.width;
+          let h = img.height;
+          if (w > h && w > maxDim) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else if (h > maxDim) {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+          try {
+            localStorage.setItem(AVATAR_KEY, compressedBase64);
+            // Only lightweight file metadata is kept in appState (never base64)
+            appState.profile.avatarMeta = {
+              fileName: file.name,
+              updatedAt: new Date().toISOString()
+            };
+            persistState();
+            loadAvatar();
+            showToast('Cat photo saved locally!');
+          } catch (err) {
+            showToast('Could not save photo — try a smaller image.', 'error');
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function saveCatName(val) {
+      appState.profile.name = val.trim();
+      persistState();
+      document.title = appState.profile.name ? `${appState.profile.name} • Care Tracker` : 'Cat Care & Health Tracker';
+    }
+
+    // =========================================================================
+    // 4. PET ID & PERSONAL DETAILS DRAWER
+    // =========================================================================
+    function togglePassportDrawer(forceOpen = null) {
+      const body = document.getElementById('passportDrawerBody');
+      const chev = document.getElementById('passportChevron');
+      const isHidden = body.classList.contains('hidden');
+      const shouldOpen = forceOpen !== null ? forceOpen : isHidden;
+
+      if (shouldOpen) {
+        body.classList.remove('hidden');
+        chev.style.transform = 'rotate(180deg)';
+      } else {
+        body.classList.add('hidden');
+        chev.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    function renderPassport() {
+      const p = appState.profile;
+      document.getElementById('catNameInput').value = p.name || '';
+      document.title = p.name ? `${p.name} • Care Tracker` : 'Cat Care & Health Tracker';
+
+      document.getElementById('petMicrochip').value = p.microchip || '';
+      document.getElementById('petDob').value = p.dob || '';
+      document.getElementById('petBreedSex').value = p.breedSex || '';
+      document.getElementById('petInsurance').value = p.insurance || '';
+      document.getElementById('petLicense').value = p.license || '';
+      document.getElementById('petVetPhone').value = p.vetPhone || '';
+
+      // Update clickable phone call link if digits exist in Vet field
+      const callLink = document.getElementById('callVetLink');
+      const digits = (p.vetPhone || '').replace(/[^0-9+]/g, '');
+      if (digits.length >= 6) {
+        callLink.href = `tel:${digits}`;
+        callLink.classList.remove('hidden');
+      } else {
+        callLink.classList.add('hidden');
+      }
+
+      const ageText = calculateAgeString(p.dob);
+      document.getElementById('petAgeBadge').textContent = ageText ? `(${ageText})` : '';
+
+      const summaryParts = [];
+      if (ageText) summaryParts.push(ageText);
+      if (p.breedSex) summaryParts.push(p.breedSex);
+      if (p.microchip) summaryParts.push(`Chip: ${p.microchip}`);
+
+      const summaryEl = document.getElementById('passportSummaryLine');
+      const headerSub = document.getElementById('headerSubtitle');
+      if (summaryParts.length > 0) {
+        summaryEl.textContent = summaryParts.join(' • ');
+        headerSub.textContent = summaryParts.slice(0, 2).join(' • ');
+      } else {
+        summaryEl.textContent = 'Empty — tap to add Microchip, Date of Birth, Insurance & Vet Contact';
+        headerSub.textContent = 'Tap name to edit • Tap photo to upload';
+      }
+    }
+
+    function savePassport(showConfirmation = false) {
+      appState.profile.microchip = document.getElementById('petMicrochip').value.trim();
+      appState.profile.dob = document.getElementById('petDob').value;
+      appState.profile.breedSex = document.getElementById('petBreedSex').value.trim();
+      appState.profile.insurance = document.getElementById('petInsurance').value.trim();
+      appState.profile.license = document.getElementById('petLicense').value.trim();
+      appState.profile.vetPhone = document.getElementById('petVetPhone').value.trim();
+      persistState();
+      renderPassport();
+      if (showConfirmation) {
+        showToast('Pet ID & personal details saved!');
+      }
+    }
+
+    function calculateAgeString(dobStr) {
+      if (!dobStr) return '';
+      const dob = new Date(dobStr);
+      if (isNaN(dob.getTime())) return '';
+      const now = new Date();
+      let years = now.getFullYear() - dob.getFullYear();
+      let months = now.getMonth() - dob.getMonth();
+      if (now.getDate() < dob.getDate()) months--;
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+      if (years < 0) return '';
+      if (years === 0) return `${months} mo old`;
+      return months > 0 ? `${years}y ${months}m old` : `${years} yr old`;
+    }
+
+    function copyMicrochip() {
+      const val = document.getElementById('petMicrochip').value.trim();
+      if (!val) {
+        showToast('Enter a microchip number first.', 'error');
+        return;
+      }
+      copyTextFallback(val, 'Microchip copied to clipboard!');
+    }
+
+    // =========================================================================
+    // 5. LOGGING MODAL & CATEGORY FORMS
+    // =========================================================================
+    const CATEGORY_META = {
+      food: { label: 'Food Intake', icon: 'utensils', color: 'text-[#6D563E] dark:text-pastel-oat bg-pastel-oatLight dark:bg-pastel-oat/20' },
+      weight: { label: 'Weight', icon: 'scale', color: 'text-pastel-sageInk dark:text-pastel-sage bg-pastel-sageLight dark:bg-pastel-sage/20' },
+      puke: { label: 'Puke Tracker', icon: 'alert-circle', color: 'text-[#7C4432] dark:text-pastel-peach bg-pastel-peachLight dark:bg-pastel-peach/20' },
+      litter: { label: 'Litter Box', icon: 'sparkles', color: 'text-[#39556E] dark:text-pastel-slate bg-pastel-slateLight dark:bg-pastel-slate/20' },
+      water: { label: 'Water & Fountain', icon: 'droplets', color: 'text-sky-700 dark:text-sky-300 bg-sky-100/80 dark:bg-sky-900/30' },
+      purchase: { label: 'Food Purchase', icon: 'shopping-bag', color: 'text-teal-700 dark:text-teal-300 bg-teal-100/80 dark:bg-teal-900/30' },
+      vaccine: { label: 'Vaccine / Med', icon: 'syringe', color: 'text-purple-700 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-900/30' },
+      vet: { label: 'Vet Visit', icon: 'stethoscope', color: 'text-rose-700 dark:text-rose-300 bg-rose-100/80 dark:bg-rose-900/30' },
+      event: { label: 'General Event', icon: 'calendar-plus', color: 'text-amber-700 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-900/30' }
+    };
+
+    function toLocalDatetimeInput(isoStr) {
+      const d = isoStr ? new Date(isoStr) : new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function openLogModal(category = 'food', existingEntry = null) {
+      document.getElementById('editingEntryId').value = existingEntry ? existingEntry.id : '';
+      document.getElementById('logModalTitle').textContent = existingEntry ? 'Edit Care Entry' : 'New Care Entry';
+      document.getElementById('entryTimestamp').value = toLocalDatetimeInput(existingEntry ? existingEntry.timestamp : null);
+      document.getElementById('entryNotes').value = existingEntry ? (existingEntry.notes || '') : '';
+
+      const delBtn = document.getElementById('deleteEntryBtn');
+      if (existingEntry) {
+        delBtn.classList.remove('hidden');
+      } else {
+        delBtn.classList.add('hidden');
+      }
+
+      selectLogCategory(existingEntry ? existingEntry.category : category, existingEntry);
+      openModal('logModal');
+    }
+
+    function selectLogCategory(cat, existingEntry = null) {
+      document.getElementById('entryCategory').value = cat;
+
+      document.querySelectorAll('.log-cat-pill').forEach(btn => {
+        if (btn.dataset.logtype === cat) {
+          btn.className = 'log-cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition bg-pastel-sage text-pastel-sageInk dark:text-night-bg shadow-sm';
+        } else {
+          btn.className = 'log-cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition bg-pastel-bg dark:bg-night-bg text-pastel-muted dark:text-night-muted';
+        }
+      });
+
+      const container = document.getElementById('dynamicFormFields');
+      const d = existingEntry ? (existingEntry.data || {}) : {};
+
+      const lastFoodLog = [...appState.logs]
+        .filter(l => l.category === 'food' && l.data && typeof l.data.afterWeight === 'number')
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+      const suggestedBefore = (!existingEntry && lastFoodLog) ? lastFoodLog.data.afterWeight : '';
+
+      if (cat === 'food') {
+        container.innerHTML = `
+          <div class="p-3.5 rounded-2xl bg-pastel-oatLight/60 dark:bg-white/5 space-y-3">
+            <p class="text-xs text-pastel-muted dark:text-night-muted">Weigh the bowl before refilling, then weigh again after refilling. Intake is auto-calculated from previous bowl weight.</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold mb-1">Bowl Before Refill (g)</label>
+                <input id="fieldBowlBefore" type="number" step="0.1" value="${d.beforeWeight ?? suggestedBefore}"
+                  placeholder="e.g. 142" class="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-night-bg border border-black/10 dark:border-white/10" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold mb-1">Bowl After Refill (g)</label>
+                <input id="fieldBowlAfter" type="number" step="0.1" value="${d.afterWeight ?? ''}"
+                  placeholder="e.g. 210" class="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-night-bg border border-black/10 dark:border-white/10" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 items-end">
+              <div>
+                <label class="block text-xs font-semibold mb-1">Eaten / Intake (g) *</label>
+                <input id="fieldFoodEaten" type="number" step="0.1" required value="${d.eatenGrams ?? ''}"
+                  placeholder="Auto or manual" class="w-full px-3 py-2 rounded-xl text-sm font-bold bg-white dark:bg-night-bg border border-pastel-sage" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold mb-1">Food Type / Meal</label>
+                <input id="fieldFoodType" type="text" value="${escapeHtml(d.foodType || '')}"
+                  placeholder="Dry / Wet / Brand" class="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-night-bg border border-black/10 dark:border-white/10" />
+              </div>
+            </div>
+          </div>
+        `;
+        const bwInput = document.getElementById('fieldBowlBefore');
+        if (bwInput) bwInput.addEventListener('input', calcFoodIntake);
+      } else if (cat === 'weight') {
+        container.innerHTML = `
+          <div class="grid grid-cols-3 gap-3">
+            <div class="col-span-2">
+              <label class="block text-xs font-semibold mb-1">Body Weight *</label>
+              <input id="fieldWeightVal" type="number" step="0.01" required value="${d.weight ?? ''}" placeholder="e.g. 4.35"
+                class="w-full px-3.5 py-2.5 rounded-2xl text-base font-bold bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold mb-1">Unit</label>
+              <select id="fieldWeightUnit" class="w-full px-3 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10">
+                <option value="kg" ${(d.unit || 'kg') === 'kg' ? 'selected' : ''}>kg</option>
+                <option value="lbs" ${d.unit === 'lbs' ? 'selected' : ''}>lbs</option>
+              </select>
+            </div>
+          </div>
+        `;
+      } else if (cat === 'puke') {
+        const reason = d.reason || 'Hairball';
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold mb-1.5">Suspected Reason *</label>
+            <div class="grid grid-cols-3 gap-2">
+              ${['Hairball', 'Food', 'Others'].map(r => `
+                <label class="cursor-pointer">
+                  <input type="radio" name="pukeReason" value="${r}" ${reason === r ? 'checked' : ''} class="peer hidden" />
+                  <div class="py-2.5 px-3 rounded-2xl text-center text-xs font-semibold border border-black/10 dark:border-white/10 bg-pastel-bg dark:bg-night-bg peer-checked:bg-pastel-peach peer-checked:text-white peer-checked:border-pastel-peach transition">
+                    ${r}
+                  </div>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      } else if (cat === 'litter') {
+        const cleanType = d.cleanType || 'Normal Scoop';
+        const cleaner = d.cleaner || appState.cleaners[0] || 'Me';
+        const stool = d.stool || 'Normal';
+        container.innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold mb-1.5">Cleaning Type *</label>
+              <div class="grid grid-cols-2 gap-2">
+                ${['Normal Scoop', 'Deep Clean'].map(t => `
+                  <label class="cursor-pointer">
+                    <input type="radio" name="litterCleanType" value="${t}" ${cleanType === t ? 'checked' : ''} class="peer hidden" />
+                    <div class="py-2.5 px-3 rounded-2xl text-center text-xs font-semibold border border-black/10 dark:border-white/10 bg-pastel-bg dark:bg-night-bg peer-checked:bg-pastel-slate peer-checked:text-white peer-checked:border-pastel-slate transition">
+                      ${t}
+                    </div>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold mb-1">Cleaned By</label>
+                <div id="cleanerSelectWrap" class="flex gap-1.5">
+                  <select id="fieldLitterCleaner" class="w-full px-3 py-2 rounded-xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10">
+                    ${appState.cleaners.map(c => `<option value="${escapeHtml(c)}" ${cleaner === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
+                  </select>
+                  <button type="button" id="addCleanerInlineBtn" title="Add person"
+                    class="px-2.5 rounded-xl bg-pastel-slateLight dark:bg-white/10 text-[#39556E] dark:text-pastel-slate font-bold text-sm">+</button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold mb-1">Stool / Observation</label>
+                <select id="fieldLitterStool" class="w-full px-3 py-2 rounded-xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10">
+                  ${['Normal', 'Soft / Loose', 'Hard / Constipated', 'Diarrhea', 'No Stool (Pee Only)'].map(s => `
+                    <option value="${s}" ${stool === s ? 'selected' : ''}>${s}</option>
+                  `).join('')}
+                </select>
+              </div>
+            </div>
+          </div>
+        `;
+        const addBtn = document.getElementById('addCleanerInlineBtn');
+        if (addBtn) addBtn.addEventListener('click', promptAddCleaner);
+      } else if (cat === 'water') {
+        const level = d.waterLevel || 'Full / High';
+        container.innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold mb-1">Water Level Observed</label>
+              <select id="fieldWaterLevel" class="w-full px-3.5 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10">
+                ${['Full / High', 'Good / Half', 'Low', 'Empty'].map(lvl => `
+                  <option value="${lvl}" ${level === lvl ? 'selected' : ''}>${lvl}</option>
+                `).join('')}
+              </select>
+            </div>
+            <div class="space-y-2 pt-1">
+              <label class="flex items-center gap-3 p-3 rounded-2xl bg-pastel-bg dark:bg-night-bg cursor-pointer">
+                <input id="fieldWaterRefill" type="checkbox" ${d.refillDone ? 'checked' : ''} class="w-4 h-4 accent-sky-600 rounded" />
+                <span class="text-sm font-medium">Refill Done</span>
+              </label>
+              <label class="flex items-center gap-3 p-3 rounded-2xl bg-pastel-bg dark:bg-night-bg cursor-pointer">
+                <input id="fieldWaterClean" type="checkbox" ${d.cleaningDone ? 'checked' : ''} class="w-4 h-4 accent-sky-600 rounded" />
+                <span class="text-sm font-medium">Bowl / Fountain Cleaned</span>
+              </label>
+              <label class="flex items-center gap-3 p-3 rounded-2xl bg-pastel-bg dark:bg-night-bg cursor-pointer">
+                <input id="fieldWaterFilter" type="checkbox" ${d.filterChanged ? 'checked' : ''} class="w-4 h-4 accent-sky-600 rounded" />
+                <span class="text-sm font-medium">Filter Changed</span>
+              </label>
+            </div>
+          </div>
+        `;
+      } else if (cat === 'purchase') {
+        container.innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold mb-1">Food Type & Brand *</label>
+              <input id="fieldPurchaseBrand" type="text" required value="${escapeHtml(d.brand || '')}" placeholder="e.g. Royal Canin Indoor Dry 4kg"
+                class="w-full px-3.5 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold mb-1">Bag / Pack Weight</label>
+                <input id="fieldPurchaseWeight" type="text" value="${escapeHtml(d.packWeight || '')}" placeholder="e.g. 4 kg / 24 cans"
+                  class="w-full px-3 py-2 rounded-xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold mb-1">Price / Store (Optional)</label>
+                <input id="fieldPurchasePrice" type="text" value="${escapeHtml(d.price || '')}" placeholder="e.g. $48"
+                  class="w-full px-3 py-2 rounded-xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10" />
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (cat === 'vaccine') {
+        container.innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold mb-1">Vaccine or Preventative Name *</label>
+              <input id="fieldVaccineName" type="text" required value="${escapeHtml(d.name || '')}" placeholder="e.g. F3 Booster, Revolution Plus"
+                class="w-full px-3.5 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold mb-1">Next Due Date (For Dashboard Alert)</label>
+              <input id="fieldVaccineDue" type="date" value="${d.nextDueDate || ''}"
+                class="w-full px-3.5 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10" />
+            </div>
+          </div>
+        `;
+      } else if (cat === 'vet') {
+        container.innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold mb-1">Vet Visit Reason / Summary *</label>
+              <input id="fieldVetTitle" type="text" required value="${escapeHtml(d.title || '')}" placeholder="e.g. Annual Wellness Checkup, Dental Exam"
+                class="w-full px-3.5 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold mb-1">Clinic / Doctor (Optional)</label>
+              <input id="fieldVetClinic" type="text" value="${escapeHtml(d.clinic || '')}" placeholder="e.g. Dr. Sarah • City Vet"
+                class="w-full px-3.5 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10" />
+            </div>
+          </div>
+        `;
+      } else if (cat === 'event') {
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold mb-1">General Event Title *</label>
+            <input id="fieldEventTitle" type="text" required value="${escapeHtml(d.title || '')}" placeholder="e.g. Nail Trim, Grooming, New Toy, Behavior Note"
+              class="w-full px-3.5 py-2.5 rounded-2xl text-sm bg-pastel-bg dark:bg-night-bg border border-black/10 dark:border-white/10" />
+          </div>
+        `;
+      }
+    }
+
+    function calcFoodIntake() {
+      const beforeInput = document.getElementById('fieldBowlBefore');
+      const eatenInput = document.getElementById('fieldFoodEaten');
+      if (!beforeInput || !eatenInput) return;
+
+      const currentBefore = parseFloat(beforeInput.value);
+      const lastFoodLog = [...appState.logs]
+        .filter(l => l.category === 'food' && l.data && typeof l.data.afterWeight === 'number')
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+      if (lastFoodLog && !isNaN(currentBefore)) {
+        const diff = lastFoodLog.data.afterWeight - currentBefore;
+        if (diff >= 0) {
+          eatenInput.value = Math.round(diff * 10) / 10;
+        }
+      }
+    }
+
+    function promptAddCleaner() {
+      const wrapper = document.getElementById('cleanerSelectWrap');
+      if (!wrapper) return;
+      wrapper.innerHTML = `
+        <input id="newCleanerInput" type="text" placeholder="Enter name" class="w-full px-3 py-2 rounded-xl text-sm bg-pastel-bg dark:bg-night-bg border border-pastel-sage" />
+        <button type="button" id="confirmNewCleanerBtn" class="px-3 rounded-xl bg-pastel-sage text-pastel-sageInk text-xs font-bold">Add</button>
+      `;
+      const inp = document.getElementById('newCleanerInput');
+      const btn = document.getElementById('confirmNewCleanerBtn');
+      if (inp) inp.focus();
+      if (btn) btn.addEventListener('click', confirmNewCleaner);
+    }
+
+    function confirmNewCleaner() {
+      const inp = document.getElementById('newCleanerInput');
+      const name = inp ? inp.value.trim() : '';
+      if (name && !appState.cleaners.includes(name)) {
+        appState.cleaners.push(name);
+        persistState();
+      }
+      selectLogCategory('litter', { data: { cleaner: name || appState.cleaners[0] } });
+    }
+
+    function saveLogEntry(e) {
+      e.preventDefault();
+      const id = document.getElementById('editingEntryId').value || ('log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7));
+      const category = document.getElementById('entryCategory').value;
+      const tsVal = document.getElementById('entryTimestamp').value;
+      const timestamp = tsVal ? new Date(tsVal).toISOString() : new Date().toISOString();
+      const notes = document.getElementById('entryNotes').value.trim();
+
+      let data = {};
+      if (category === 'food') {
+        const bw = parseFloat(document.getElementById('fieldBowlBefore').value);
+        const aw = parseFloat(document.getElementById('fieldBowlAfter').value);
+        const eg = parseFloat(document.getElementById('fieldFoodEaten').value);
+        data = {
+          beforeWeight: isNaN(bw) ? null : bw,
+          afterWeight: isNaN(aw) ? null : aw,
+          eatenGrams: isNaN(eg) ? 0 : eg,
+          foodType: document.getElementById('fieldFoodType').value.trim()
+        };
+      } else if (category === 'weight') {
+        data = {
+          weight: parseFloat(document.getElementById('fieldWeightVal').value),
+          unit: document.getElementById('fieldWeightUnit').value
+        };
+      } else if (category === 'puke') {
+        const checked = document.querySelector('input[name="pukeReason"]:checked');
+        data = { reason: checked ? checked.value : 'Hairball' };
+      } else if (category === 'litter') {
+        const checked = document.querySelector('input[name="litterCleanType"]:checked');
+        const cleanerEl = document.getElementById('fieldLitterCleaner');
+        data = {
+          cleanType: checked ? checked.value : 'Normal Scoop',
+          cleaner: cleanerEl ? cleanerEl.value : (appState.cleaners[0] || 'Me'),
+          stool: document.getElementById('fieldLitterStool').value
+        };
+      } else if (category === 'water') {
+        data = {
+          waterLevel: document.getElementById('fieldWaterLevel').value,
+          refillDone: document.getElementById('fieldWaterRefill').checked,
+          cleaningDone: document.getElementById('fieldWaterClean').checked,
+          filterChanged: document.getElementById('fieldWaterFilter').checked
+        };
+      } else if (category === 'purchase') {
+        data = {
+          brand: document.getElementById('fieldPurchaseBrand').value.trim(),
+          packWeight: document.getElementById('fieldPurchaseWeight').value.trim(),
+          price: document.getElementById('fieldPurchasePrice').value.trim()
+        };
+      } else if (category === 'vaccine') {
+        data = {
+          name: document.getElementById('fieldVaccineName').value.trim(),
+          nextDueDate: document.getElementById('fieldVaccineDue').value
+        };
+      } else if (category === 'vet') {
+        data = {
+          title: document.getElementById('fieldVetTitle').value.trim(),
+          clinic: document.getElementById('fieldVetClinic').value.trim()
+        };
+      } else if (category === 'event') {
+        data = {
+          title: document.getElementById('fieldEventTitle').value.trim()
+        };
+      }
+
+      const entryObj = { id, category, timestamp, data, notes };
+      const existingIdx = appState.logs.findIndex(item => item.id === id);
+      if (existingIdx >= 0) {
+        appState.logs[existingIdx] = entryObj;
+        showToast('Entry updated!');
+      } else {
+        appState.logs.push(entryObj);
+        showToast(`${CATEGORY_META[category].label} logged!`);
+      }
+
+      persistState();
+      closeModal('logModal');
+      refreshAllViews();
+    }
+
+    function deleteCurrentEntry() {
+      const id = document.getElementById('editingEntryId').value;
+      if (!id) return;
+      appState.logs = appState.logs.filter(item => item.id !== id);
+      persistState();
+      closeModal('logModal');
+      refreshAllViews();
+      showToast('Entry deleted.');
+    }
+
+    // =========================================================================
+    // 6. DASHBOARD, TRENDS & HISTORY RENDERING
+    // =========================================================================
+    function handlePukeRangeChange() {
+      const sel = document.getElementById('pukeRangeSelect').value;
+      const dateWrap = document.getElementById('pukeSinceDateWrap');
+      if (sel === 'since') {
+        dateWrap.classList.remove('hidden');
+        if (!document.getElementById('pukeSinceDateInput').value) {
+          const d = new Date();
+          d.setDate(d.getDate() - 14);
+          document.getElementById('pukeSinceDateInput').value = d.toISOString().split('T')[0];
+        }
+      } else {
+        dateWrap.classList.add('hidden');
+      }
+      renderDashboard();
+    }
+
+    function renderDashboard() {
+      const sorted = [...appState.logs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      // 1. Weight Card
+      const weights = sorted.filter(l => l.category === 'weight');
+      if (weights.length > 0) {
+        const latest = weights[0];
+        document.getElementById('cardWeightVal').textContent = `${latest.data.weight} ${latest.data.unit}`;
+        document.getElementById('cardWeightSub').textContent = formatShortDate(latest.timestamp);
+        if (weights.length > 1) {
+          const diff = (latest.data.weight - weights[1].data.weight).toFixed(2);
+          const sign = diff > 0 ? '+' : '';
+          document.getElementById('cardWeightDelta').textContent = `${sign}${diff} ${latest.data.unit}`;
+        } else {
+          document.getElementById('cardWeightDelta').textContent = 'First log';
+        }
+      } else {
+        document.getElementById('cardWeightVal').textContent = '—';
+        document.getElementById('cardWeightDelta').textContent = '';
+        document.getElementById('cardWeightSub').textContent = 'No weigh-ins yet';
+      }
+
+      // 2. Daily Food Intake Card
+      const todayStr = new Date().toDateString();
+      const foods = sorted.filter(l => l.category === 'food');
+      const todayGrams = foods
+        .filter(l => new Date(l.timestamp).toDateString() === todayStr)
+        .reduce((acc, cur) => acc + (Number(cur.data.eatenGrams) || 0), 0);
+      document.getElementById('cardFoodToday').textContent = `${Math.round(todayGrams * 10) / 10} g`;
+      document.getElementById('cardFoodSub').textContent = foods.length ? `Last: ${formatShortDate(foods[0].timestamp)}` : 'Bowl before & after weigh-in';
+
+      // 3. Puke Tracker Card
+      const pukes = sorted.filter(l => l.category === 'puke');
+      const rangeMode = document.getElementById('pukeRangeSelect').value;
+      const now = new Date();
+      let cutoff = new Date();
+      if (rangeMode === 'week') {
+        cutoff.setDate(now.getDate() - 7);
+      } else if (rangeMode === 'month') {
+        cutoff.setDate(now.getDate() - 30);
+      } else {
+        const customDate = document.getElementById('pukeSinceDateInput').value;
+        cutoff = customDate ? new Date(customDate) : new Date(0);
+      }
+      const filteredPukes = pukes.filter(p => new Date(p.timestamp) >= cutoff);
+      document.getElementById('cardPukeCount').textContent = filteredPukes.length;
+      document.getElementById('cardPukeLast').textContent = pukes.length
+        ? `Last: ${pukes[0].data.reason} (${formatShortDate(pukes[0].timestamp)})`
+        : 'No episodes';
+
+      // 4. Litter Box Card
+      const litters = sorted.filter(l => l.category === 'litter');
+      if (litters.length > 0) {
+        const l = litters[0];
+        document.getElementById('cardLitterVal').textContent = `${l.data.cleanType} • ${l.data.stool}`;
+        document.getElementById('cardLitterSub').textContent = formatShortDate(l.timestamp);
+        document.getElementById('cardLitterMeta').textContent = `By ${l.data.cleaner}${l.notes ? ' — ' + l.notes : ''}`;
+      } else {
+        document.getElementById('cardLitterVal').textContent = '—';
+        document.getElementById('cardLitterSub').textContent = 'No cleanings logged';
+        document.getElementById('cardLitterMeta').textContent = 'Tap + for normal or deep clean';
+      }
+
+      // 5. Water & Fountain Card
+      const waters = sorted.filter(l => l.category === 'water');
+      if (waters.length > 0) {
+        const w = waters[0];
+        const actions = [];
+        if (w.data.refillDone) actions.push('Refilled');
+        if (w.data.cleaningDone) actions.push('Cleaned');
+        if (w.data.filterChanged) actions.push('New Filter');
+        document.getElementById('cardWaterVal').textContent = actions.length ? actions.join(' • ') : `Level: ${w.data.waterLevel}`;
+        document.getElementById('cardWaterSub').textContent = formatShortDate(w.timestamp);
+        document.getElementById('cardWaterMeta').textContent = `Water Level: ${w.data.waterLevel}`;
+      } else {
+        document.getElementById('cardWaterVal').textContent = '—';
+        document.getElementById('cardWaterSub').textContent = 'No checks logged';
+        document.getElementById('cardWaterMeta').textContent = 'Level, refill, wash & filter';
+      }
+
+      // 6. Food Purchases Card
+      const purchases = sorted.filter(l => l.category === 'purchase');
+      if (purchases.length > 0) {
+        const p = purchases[0];
+        document.getElementById('cardPurchaseVal').textContent = p.data.brand || 'Food Bag';
+        document.getElementById('cardPurchaseSub').textContent = formatShortDate(p.timestamp);
+        document.getElementById('cardPurchaseMeta').textContent = [p.data.packWeight, p.data.price].filter(Boolean).join(' • ') || 'Food supply logged';
+      } else {
+        document.getElementById('cardPurchaseVal').textContent = '—';
+        document.getElementById('cardPurchaseSub').textContent = 'No bags logged yet';
+        document.getElementById('cardPurchaseMeta').textContent = 'Track food types & bag dates';
+      }
+
+      // 7. Vaccines & Preventatives Card
+      const vaccines = sorted.filter(l => l.category === 'vaccine');
+      if (vaccines.length > 0) {
+        const v = vaccines[0];
+        document.getElementById('cardVaccineVal').textContent = v.data.name;
+        document.getElementById('cardVaccineSub').textContent = formatShortDate(v.timestamp);
+        document.getElementById('cardVaccineMeta').textContent = v.data.nextDueDate ? `Next due: ${v.data.nextDueDate}` : 'No next due date set';
+      } else {
+        document.getElementById('cardVaccineVal').textContent = '—';
+        document.getElementById('cardVaccineSub').textContent = 'No records yet';
+        document.getElementById('cardVaccineMeta').textContent = 'Track shots, flea/worming & due dates';
+      }
+
+      // 8. Vet Visits & General Events Card
+      const vetAndEvents = sorted.filter(l => l.category === 'vet' || l.category === 'event');
+      if (vetAndEvents.length > 0) {
+        const ve = vetAndEvents[0];
+        document.getElementById('cardVetVal').textContent = ve.data.title || CATEGORY_META[ve.category].label;
+        document.getElementById('cardVetSub').textContent = `${CATEGORY_META[ve.category].label} • ${formatShortDate(ve.timestamp)}`;
+        document.getElementById('cardVetMeta').textContent = ve.data.clinic || ve.notes || 'Tap + to register a vet visit or general event';
+      } else {
+        document.getElementById('cardVetVal').textContent = '—';
+        document.getElementById('cardVetSub').textContent = 'Checkups, grooming, behavior & milestones';
+        document.getElementById('cardVetMeta').textContent = 'Tap + to register a vet visit or general event';
+      }
+
+      // Check upcoming/overdue vaccines within 14 days
+      const alertBanner = document.getElementById('vaccineAlertBanner');
+      const dueSoon = vaccines.filter(v => {
+        if (!v.data.nextDueDate) return false;
+        const due = new Date(v.data.nextDueDate);
+        const diffDays = (due - new Date()) / (1000 * 60 * 60 * 24);
+        return diffDays <= 14;
+      });
+      if (dueSoon.length > 0) {
+        alertBanner.classList.remove('hidden');
+        const item = dueSoon[0];
+        document.getElementById('vaccineAlertText').textContent = `${item.data.name} is due on ${item.data.nextDueDate}.`;
+      } else {
+        alertBanner.classList.add('hidden');
+      }
+
+      // Recent Activity Preview (Top 5)
+      const recentEl = document.getElementById('recentActivityList');
+      if (sorted.length === 0) {
+        recentEl.innerHTML = `
+          <div class="text-center py-8 px-4 rounded-2xl bg-pastel-bg/70 dark:bg-night-bg/60">
+            <p class="text-sm font-semibold text-pastel-muted dark:text-night-muted">No care entries recorded yet</p>
+            <p class="text-xs text-pastel-muted/80 dark:text-night-muted/80 mt-1">Tap any card's <strong>+</strong> button or <strong>Log Entry</strong> above to begin tracking.</p>
+          </div>
+        `;
+      } else {
+        recentEl.innerHTML = sorted.slice(0, 5).map(renderLogRowHtml).join('');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderLogRowHtml(entry) {
+      const meta = CATEGORY_META[entry.category] || CATEGORY_META.event;
+      let headline = '';
+      let subline = '';
+
+      if (entry.category === 'food') {
+        headline = `Ate ${entry.data.eatenGrams}g ${entry.data.foodType ? '(' + escapeHtml(entry.data.foodType) + ')' : ''}`;
+        if (entry.data.beforeWeight !== null && entry.data.afterWeight !== null) {
+          subline = `Bowl: ${entry.data.beforeWeight}g → ${entry.data.afterWeight}g`;
+        }
+      } else if (entry.category === 'weight') {
+        headline = `Weight: ${entry.data.weight} ${entry.data.unit}`;
+      } else if (entry.category === 'puke') {
+        headline = `Puke Episode • ${escapeHtml(entry.data.reason)}`;
+      } else if (entry.category === 'litter') {
+        headline = `${escapeHtml(entry.data.cleanType)} • ${escapeHtml(entry.data.stool)}`;
+        subline = `Cleaned by ${escapeHtml(entry.data.cleaner)}`;
+      } else if (entry.category === 'water') {
+        const tags = [];
+        if (entry.data.refillDone) tags.push('Refilled');
+        if (entry.data.cleaningDone) tags.push('Cleaned');
+        if (entry.data.filterChanged) tags.push('Filter Changed');
+        headline = tags.length ? `Water: ${tags.join(', ')}` : `Water Check (${entry.data.waterLevel})`;
+        subline = `Level: ${entry.data.waterLevel}`;
+      } else if (entry.category === 'purchase') {
+        headline = `Bought ${escapeHtml(entry.data.brand)}`;
+        subline = [entry.data.packWeight, entry.data.price].filter(Boolean).join(' • ');
+      } else if (entry.category === 'vaccine') {
+        headline = `Vaccine/Med: ${escapeHtml(entry.data.name)}`;
+        subline = entry.data.nextDueDate ? `Next due: ${entry.data.nextDueDate}` : '';
+      } else if (entry.category === 'vet') {
+        headline = `Vet Visit: ${escapeHtml(entry.data.title || 'Checkup')}`;
+        subline = entry.data.clinic ? escapeHtml(entry.data.clinic) : '';
+      } else {
+        headline = escapeHtml(entry.data.title || 'General Event');
+      }
+
+      if (entry.notes) {
+        subline = subline ? `${subline} • "${escapeHtml(entry.notes)}"` : `"${escapeHtml(entry.notes)}"`;
+      }
+
+      return `
+        <div data-edit-id="${entry.id}"
+          class="history-entry-row cursor-pointer p-3.5 rounded-2xl bg-pastel-bg/70 dark:bg-night-bg/80 hover:bg-pastel-oatLight/60 dark:hover:bg-white/5 border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between gap-3 transition">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-2xl ${meta.color} flex items-center justify-center shrink-0">
+              <i data-lucide="${meta.icon}" class="w-4 h-4"></i>
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs sm:text-sm font-bold truncate">${headline}</p>
+              <p class="text-[11px] text-pastel-muted dark:text-night-muted truncate">${subline || meta.label}</p>
+            </div>
+          </div>
+          <span class="text-[11px] font-medium text-pastel-muted dark:text-night-muted shrink-0">${formatShortDate(entry.timestamp)}</span>
+        </div>
+      `;
+    }
+
+    function renderHistory() {
+      const query = (document.getElementById('historySearchInput').value || '').toLowerCase().trim();
+      const typeFilter = document.getElementById('historyTypeFilter').value;
+
+      const filtered = [...appState.logs]
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .filter(item => {
+          if (typeFilter !== 'all' && item.category !== typeFilter) return false;
+          if (!query) return true;
+          const blob = JSON.stringify(item).toLowerCase();
+          return blob.includes(query);
+        });
+
+      const listEl = document.getElementById('fullHistoryList');
+      if (filtered.length === 0) {
+        listEl.innerHTML = `
+          <div class="bg-white dark:bg-night-card rounded-3xl p-8 text-center border border-black/5 dark:border-white/10">
+            <p class="text-sm font-semibold text-pastel-muted dark:text-night-muted">No matching entries found</p>
+          </div>
+        `;
+      } else {
+        listEl.innerHTML = filtered.map(renderLogRowHtml).join('');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderTrends() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+      const tickColor = isDark ? '#9AA5B1' : '#636E72';
+
+      const timeframeVal = document.getElementById('trendTimeframeSelect').value;
+      const cutoff = new Date();
+      if (timeframeVal !== 'all') {
+        cutoff.setDate(cutoff.getDate() - parseInt(timeframeVal, 10));
+      } else {
+        cutoff.setTime(0);
+      }
+
+      const activeAccent = PASTEL_THEMES[localStorage.getItem(ACCENT_KEY) || 'mint'] || PASTEL_THEMES.mint;
+
+      // 1. Weight Chart
+      const weights = [...appState.logs]
+        .filter(l => l.category === 'weight' && new Date(l.timestamp) >= cutoff)
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      const wEmpty = document.getElementById('weightChartEmpty');
+      if (weightChartInstance) weightChartInstance.destroy();
+
+      if (weights.length === 0) {
+        wEmpty.classList.remove('hidden');
+      } else {
+        wEmpty.classList.add('hidden');
+        const ctxW = document.getElementById('weightChartCanvas').getContext('2d');
+        weightChartInstance = new Chart(ctxW, {
+          type: 'line',
+          data: {
+            labels: weights.map(w => new Date(w.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })),
+            datasets: [{
+              label: `Weight (${weights[0].data.unit || 'kg'})`,
+              data: weights.map(w => w.data.weight),
+              borderColor: activeAccent.chart,
+              backgroundColor: activeAccent.fill,
+              borderWidth: 3,
+              tension: 0.35,
+              fill: true,
+              pointRadius: 5,
+              pointBackgroundColor: activeAccent.chart
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } } },
+              y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } }
+            }
+          }
+        });
+      }
+
+      // 2. Daily Food Chart
+      const foods = [...appState.logs]
+        .filter(l => l.category === 'food' && new Date(l.timestamp) >= cutoff)
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      const fEmpty = document.getElementById('foodChartEmpty');
+      if (foodChartInstance) foodChartInstance.destroy();
+
+      if (foods.length === 0) {
+        fEmpty.classList.remove('hidden');
+      } else {
+        fEmpty.classList.add('hidden');
+        const byDay = {};
+        foods.forEach(f => {
+          const dayKey = new Date(f.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          byDay[dayKey] = (byDay[dayKey] || 0) + (Number(f.data.eatenGrams) || 0);
+        });
+        const labels = Object.keys(byDay);
+        const values = labels.map(k => Math.round(byDay[k] * 10) / 10);
+
+        const ctxF = document.getElementById('foodChartCanvas').getContext('2d');
+        foodChartInstance = new Chart(ctxF, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Grams Eaten',
+              data: values,
+              backgroundColor: '#D8C5B0',
+              borderRadius: 10
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } } },
+              y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } }
+            }
+          }
+        });
+      }
+
+      // 3. Pukes by Reason Chart
+      const pukes = appState.logs.filter(l => l.category === 'puke' && new Date(l.timestamp) >= cutoff);
+      const pEmpty = document.getElementById('pukeChartEmpty');
+      if (pukeChartInstance) pukeChartInstance.destroy();
+
+      if (pukes.length === 0) {
+        pEmpty.classList.remove('hidden');
+      } else {
+        pEmpty.classList.add('hidden');
+        const counts = { Hairball: 0, Food: 0, Others: 0 };
+        pukes.forEach(p => {
+          const r = p.data.reason || 'Others';
+          counts[r] = (counts[r] || 0) + 1;
+        });
+        const ctxP = document.getElementById('pukeChartCanvas').getContext('2d');
+        pukeChartInstance = new Chart(ctxP, {
+          type: 'bar',
+          data: {
+            labels: ['Hairball', 'Food', 'Others'],
+            datasets: [{
+              label: 'Episodes',
+              data: [counts.Hairball, counts.Food, counts.Others],
+              backgroundColor: ['#E8B4A2', '#9EB8D0', '#B2A1DB'],
+              borderRadius: 10
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } } },
+              y: { beginAtZero: true, grid: { color: gridColor }, ticks: { stepSize: 1, color: tickColor, font: { size: 11 } } }
+            }
+          }
+        });
+      }
+    }
+
+    // =========================================================================
+    // 7. ZERO-BLOAT JSON EXPORT & PARTNER SMART MERGE
+    // =========================================================================
+    function buildCleanExportPayload() {
+      // Strictly excludes AVATAR_KEY base64 image data
+      return {
+        app: 'CatCareTracker',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        profile: {
+          name: appState.profile.name || '',
+          microchip: appState.profile.microchip || '',
+          dob: appState.profile.dob || '',
+          breedSex: appState.profile.breedSex || '',
+          insurance: appState.profile.insurance || '',
+          license: appState.profile.license || '',
+          vetPhone: appState.profile.vetPhone || '',
+          avatarMeta: appState.profile.avatarMeta || null
+        },
+        cleaners: appState.cleaners,
+        logs: appState.logs
+      };
+    }
+
+    function exportJsonFile() {
+      const payload = buildCleanExportPayload();
+      const jsonStr = JSON.stringify(payload, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const catSlug = (appState.profile.name || 'cat').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const dateStamp = new Date().toISOString().split('T')[0];
+      a.href = url;
+      a.download = `${catSlug}-care-backup-${dateStamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Zero-bloat JSON backup downloaded!');
+    }
+
+    function copyJsonToClipboard() {
+      const jsonStr = JSON.stringify(buildCleanExportPayload());
+      copyTextFallback(jsonStr, 'Clean backup JSON copied! Ready to paste to your partner.');
+    }
+
+    function handleJsonFileUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('importJsonTextarea').value = e.target.result;
+        showToast('File loaded! Tap Smart Merge or Full Replace.');
+      };
+      reader.readAsText(file);
+    }
+
+    function processImport(mode) {
+      const rawText = document.getElementById('importJsonTextarea').value.trim();
+      if (!rawText) {
+        showToast('Paste JSON text or choose a .json file first.', 'error');
+        return;
+      }
+
+      try {
+        const incoming = JSON.parse(rawText);
+        if (!incoming || !Array.isArray(incoming.logs)) {
+          throw new Error('Invalid backup format');
+        }
+
+        if (mode === 'replace') {
+          appState = {
+            ...getEmptyState(),
+            profile: { ...getEmptyState().profile, ...(incoming.profile || {}) },
+            cleaners: Array.isArray(incoming.cleaners) && incoming.cleaners.length ? incoming.cleaners : ['Me', 'Wife'],
+            logs: incoming.logs
+          };
+          persistState();
+          refreshAllViews();
+          closeModal('syncModal');
+          showToast(`Restored ${appState.logs.length} entries!`);
+        } else {
+          // Partner Smart Merge: checks every entry by ID and signature so zero duplicates are created
+          const existingIds = new Set(appState.logs.map(l => l.id));
+          const existingSignatures = new Set(
+            appState.logs.map(l => `${l.category}|${l.timestamp}|${JSON.stringify(l.data)}`)
+          );
+          let addedCount = 0;
+
+          incoming.logs.forEach(item => {
+            if (!item || !item.id) return;
+            const sig = `${item.category}|${item.timestamp}|${JSON.stringify(item.data)}`;
+            if (!existingIds.has(item.id) && !existingSignatures.has(sig)) {
+              appState.logs.push(item);
+              existingIds.add(item.id);
+              existingSignatures.add(sig);
+              addedCount++;
+            }
+          });
+
+          if (Array.isArray(incoming.cleaners)) {
+            incoming.cleaners.forEach(c => {
+              if (c && !appState.cleaners.includes(c)) appState.cleaners.push(c);
+            });
+          }
+
+          if (incoming.profile) {
+            ['name', 'microchip', 'dob', 'breedSex', 'insurance', 'license', 'vetPhone'].forEach(field => {
+              if (!appState.profile[field] && incoming.profile[field]) {
+                appState.profile[field] = incoming.profile[field];
+              }
+            });
+          }
+
+          persistState();
+          refreshAllViews();
+          closeModal('syncModal');
+          showToast(addedCount > 0
+            ? `Smart Merge complete! Added ${addedCount} missing entries.`
+            : 'Already up to date — 0 missing entries found.');
+        }
+      } catch (err) {
+        showToast('Invalid JSON format. Please check the file or pasted text.', 'error');
+      }
+    }
+
+    // =========================================================================
+    // 8. NAVIGATION & EVENT BINDING
+    // =========================================================================
+    function switchTab(tabName) {
+      ['dashboard', 'trends', 'history'].forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const btn = document.getElementById(`tabBtn-${t}`);
+        if (t === tabName) {
+          view.classList.remove('hidden');
+          btn.className = 'tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-pastel-sage text-pastel-sageInk dark:text-night-bg shadow-sm';
+        } else {
+          view.classList.add('hidden');
+          btn.className = 'tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-pastel-muted dark:text-night-muted hover:text-pastel-ink dark:hover:text-night-ink transition';
+        }
+      });
+
+      if (tabName === 'trends') renderTrends();
+      if (tabName === 'history') renderHistory();
+    }
+
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    }
+
+    function formatShortDate(isoStr) {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ', ' +
+             d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function copyTextFallback(text, successMsg) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg);
+      } catch (e) {
+        showToast('Could not copy automatically.', 'error');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const el = document.createElement('div');
+      const bgClass = type === 'error'
+        ? 'bg-red-500 text-white'
+        : 'bg-pastel-sage text-pastel-sageInk dark:text-night-bg border border-black/5';
+      el.className = `${bgClass} px-4 py-3 rounded-2xl shadow-lg text-xs font-bold text-center pointer-events-auto animate-fade-up`;
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.25s ease';
+        setTimeout(() => el.remove(), 260);
+      }, 2800);
+    }
+
+    function refreshAllViews() {
+      renderPassport();
+      renderDashboard();
+      renderHistory();
+      if (!document.getElementById('view-trends').classList.contains('hidden')) {
+        renderTrends();
+      }
+    }
+
+    function bindAllEvents() {
+      // Avatar upload & editable cat name
+      document.getElementById('avatarUploadBtn').addEventListener('click', () => document.getElementById('avatarInput').click());
+      document.getElementById('avatarPencilBtn').addEventListener('click', () => document.getElementById('avatarInput').click());
+      document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload);
+      document.getElementById('catNameInput').addEventListener('input', (e) => saveCatName(e.target.value));
+
+      // Top Header Buttons
+      document.querySelectorAll('.pastel-swatch').forEach(btn => {
+        btn.addEventListener('click', () => setPastelAccent(btn.dataset.swatch));
+      });
+      document.getElementById('headerPassportBtn').addEventListener('click', () => {
+        togglePassportDrawer(true);
+        document.getElementById('passportSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+      document.getElementById('installAppBtn').addEventListener('click', triggerPwaInstall);
+      document.getElementById('headerSyncBtn').addEventListener('click', () => openModal('syncModal'));
+      document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+
+      // Pet ID & Passport Drawer
+      document.getElementById('passportToggleBtn').addEventListener('click', () => togglePassportDrawer());
+      document.getElementById('copyMicrochipBtn').addEventListener('click', copyMicrochip);
+      document.getElementById('savePassportBtn').addEventListener('click', () => savePassport(true));
+      ['petMicrochip', 'petDob', 'petBreedSex', 'petInsurance', 'petLicense', 'petVetPhone'].forEach(fieldId => {
+        document.getElementById(fieldId).addEventListener('change', () => savePassport(false));
+      });
+
+      // Tabs & Main Log Button
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+      document.getElementById('openMainLogBtn').addEventListener('click', () => openLogModal('food'));
+      document.getElementById('viewAllHistoryLink').addEventListener('click', () => switchTab('history'));
+
+      // Delegated Quick-Log '+' buttons
+      document.body.addEventListener('click', (e) => {
+        const quickBtn = e.target.closest('.quick-log-btn');
+        if (quickBtn) {
+          openLogModal(quickBtn.dataset.quicklog || 'food');
+          return;
+        }
+        const historyRow = e.target.closest('.history-entry-row');
+        if (historyRow) {
+          const entry = appState.logs.find(l => l.id === historyRow.dataset.editId);
+          if (entry) openLogModal(entry.category, entry);
+        }
+      });
+
+      // Puke Timeframe Selector
+      document.getElementById('pukeRangeSelect').addEventListener('change', handlePukeRangeChange);
+      document.getElementById('pukeSinceDateInput').addEventListener('change', renderDashboard);
+
+      // Trends & History Filters
+      document.getElementById('trendTimeframeSelect').addEventListener('change', renderTrends);
+      document.getElementById('historySearchInput').addEventListener('input', renderHistory);
+      document.getElementById('historyTypeFilter').addEventListener('change', renderHistory);
+
+      // Log Entry Modal
+      document.getElementById('closeLogModalBtn').addEventListener('click', () => closeModal('logModal'));
+      document.querySelectorAll('.log-cat-pill').forEach(pill => {
+        pill.addEventListener('click', () => selectLogCategory(pill.dataset.logtype));
+      });
+      document.getElementById('entryForm').addEventListener('submit', saveLogEntry);
+      document.getElementById('deleteEntryBtn').addEventListener('click', deleteCurrentEntry);
+
+      // Sync & Backup Modal
+      document.getElementById('closeSyncModalBtn').addEventListener('click', () => closeModal('syncModal'));
+      document.getElementById('exportJsonFileBtn').addEventListener('click', exportJsonFile);
+      document.getElementById('copyJsonTextBtn').addEventListener('click', copyJsonToClipboard);
+      document.getElementById('jsonFileUploadInput').addEventListener('change', handleJsonFileUpload);
+      document.getElementById('smartMergeBtn').addEventListener('click', () => processImport('merge'));
+      document.getElementById('fullReplaceBtn').addEventListener('click', () => processImport('replace'));
+
+      // Install Guide Modal
+      document.getElementById('closeInstallModalBtn').addEventListener('click', () => closeModal('installGuideModal'));
+      document.getElementById('gotItInstallBtn').addEventListener('click', () => closeModal('installGuideModal'));
+
+      // Backdrop click to close modals
+      ['logModal', 'syncModal', 'installGuideModal'].forEach(modalId => {
+        const modalEl = document.getElementById(modalId);
+        modalEl.addEventListener('click', (e) => {
+          if (e.target === modalEl) closeModal(modalId);
+        });
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      bindAllEvents();
+      setupTruePwa();
+      loadAvatar();
+      refreshAllViews();
+      if (window.lucide) lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
